@@ -1,0 +1,258 @@
+@import url('https://fonts.cdnfonts.com/css/digital-numbers');
+@import "tailwindcss";
+
+:root { 
+    --neon: #00f2ff; 
+    --bg: #000; 
+    --text: #ffffff; 
+    --nav-bg: rgba(15, 15, 15, 0.3); 
+}
+
+body.light-mode { 
+    --bg: #f1f5f9; 
+    --text: #000000; 
+    --neon: #0284c7; 
+    --nav-bg: rgba(255, 255, 255, 0.4); 
+}
+
+body { 
+    background: var(--bg); 
+    color: var(--text); 
+    font-family: 'Inter', sans-serif; 
+    height: 100vh; 
+    overflow: hidden; 
+    margin: 0; 
+    transition: 0.4s; 
+}
+
+.panel-sport { 
+    background: linear-gradient(145deg, rgba(40, 40, 40, 0.4), rgba(0, 0, 0, 0.6)); 
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode .panel-sport { 
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(226, 232, 240, 0.6)); 
+    border-color: rgba(255, 255, 255, 0.8); 
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    box-shadow: 5px 5px 15px rgba(203, 213, 225, 0.5), -5px -5px 15px rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+/* Skeuomorphic Odometer Bezel */
+.odo-bezel {
+    background: #1a1a1a;
+    padding: 12px;
+    border-radius: 14px;
+    border-top: 4px solid #0a0a0a;
+    border-bottom: 4px solid #333;
+    border-left: 4px solid #111;
+    border-right: 4px solid #111;
+    box-shadow: 
+        inset 0 0 15px #000,
+        0 15px 25px rgba(0,0,0,0.8);
+}
+
+body.light-mode .odo-bezel {
+    background: #e2e8f0;
+    border-top: 4px solid #94a3b8;
+    border-bottom: 4px solid #ffffff;
+    border-left: 4px solid #cbd5e1;
+    border-right: 4px solid #cbd5e1;
+    box-shadow: 
+        inset 0 0 10px rgba(0,0,0,0.1),
+        0 10px 20px rgba(0,0,0,0.2);
+}
+
+.lcd-display { 
+    background: #0a110a; /* Dark green/grey LCD off state */
+    border-radius: 6px;
+    border: 2px solid #000;
+    box-shadow: 
+        inset 0 5px 15px rgba(0,0,0,0.9),
+        inset 0 -2px 5px rgba(255,255,255,0.1),
+        0 2px 0 rgba(255,255,255,0.1);
+    position: relative;
+    overflow: hidden;
+    padding: 5px;
+}
+
+/* Glare effect for the screen */
+.lcd-display::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 50%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+    pointer-events: none;
+}
+
+body.light-mode .lcd-display { 
+    background: #cbd5e1; 
+    border-color: #64748b; 
+    box-shadow: 
+        inset 0 5px 15px rgba(0,0,0,0.3),
+        0 2px 0 #fff; 
+}
+
+body.light-mode .lcd-display::before {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+}
+
+.digital-glow { 
+    font-family: 'Digital Numbers', sans-serif; 
+    color: var(--neon); 
+    text-shadow: 0 0 15px var(--neon); 
+}
+
+body.light-mode .digital-glow { 
+    text-shadow: none; 
+    color: #000; 
+}
+
+.gauge-fill { 
+    fill: none; 
+    stroke-width: 14; 
+    stroke-linecap: round; 
+    stroke-dasharray: 188.5; 
+    transition: 0.3s ease-out; 
+    stroke: var(--neon); 
+    filter: drop-shadow(0 0 6px var(--neon));
+}
+
+body.light-mode .gauge-fill {
+    filter: none;
+}
+
+.nav-glass {
+    position: fixed; 
+    bottom: 24px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    width: 90%; 
+    height: 72px; 
+    background: var(--nav-bg); 
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.2); 
+    border-radius: 24px; 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 5000;
+}
+
+.nav-btn { 
+    color: var(--text); 
+    opacity: 0.3; 
+    transition: 0.3s; 
+}
+
+.active-nav { 
+    opacity: 1 !important; 
+    color: var(--neon) !important; 
+}
+
+body.light-mode .main-title, 
+body.light-mode .nav-btn-plus, 
+body.light-mode .btn-save-text, 
+body.light-mode label { 
+    color: #000 !important; 
+}
+
+.big-input { 
+    background: rgba(128,128,128,0.1); 
+    border: 2px solid rgba(128,128,128,0.2); 
+    border-radius: 15px; 
+    padding: 15px; 
+    color: var(--text); 
+    font-size: 20px; 
+    width: 100%; 
+    outline: none; 
+    font-weight: bold; 
+}
+
+.odo-input { 
+    background: transparent; 
+    border: none; 
+    color: var(--neon); 
+    font-family: 'Digital Numbers', sans-serif; 
+    font-size: 46px; 
+    text-align: center; 
+    width: 100%; 
+    outline: none; 
+}
+
+.segmented-btn { 
+    flex: 1; 
+    padding: 12px; 
+    font-weight: 900; 
+    text-transform: uppercase; 
+    border: 2px solid #333; 
+    transition: 0.3s; 
+    font-size: 14px; 
+    background: rgba(255,255,255,0.05); 
+    color: var(--text); 
+}
+
+body.light-mode .segmented-btn { 
+    border-color: #94a3b8; 
+    color: #000; 
+}
+
+.btn-active { 
+    background: var(--neon) !important; 
+    color: #000 !important; 
+    border-color: var(--neon) !important; 
+}
+
+.text-danger { 
+    color: #ff3b30 !important; 
+}
+
+.alert-oil { 
+    animation: pulseRed 1.5s infinite; 
+    color: #ff3b30; 
+    font-weight: 900; 
+    background: rgba(255, 59, 48, 0.15); 
+    padding: 4px 12px; 
+    border-radius: 10px; 
+    border: 1px solid #ff3b30; 
+    font-size: 11px; 
+}
+
+@keyframes pulseRed { 
+    0% { opacity: 1; } 
+    50% { opacity: 1.0; } 
+    100% { opacity: 1; } 
+}
+
+label { 
+    font-size: 11px; 
+    font-weight: 900; 
+    color: #777; 
+    text-transform: uppercase; 
+    margin-bottom: 4px; 
+    display: block; 
+}
+
+body.light-mode label { 
+    color: #000; 
+}
+
+/* Hide scrollbar for tabs */
+.tab-content::-webkit-scrollbar {
+    display: none;
+}
+.tab-content {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    height: calc(100vh - 180px);
+    overflow-y: auto;
+    padding-bottom: 100px;
+}
