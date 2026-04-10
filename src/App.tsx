@@ -13,8 +13,8 @@ export default function App() {
   // Data
   const [allLogs, setAllLogs] = useState<any[]>([]);
   const [activeCar, setActiveCar] = useState("Hyundai I-30");
-  const [metaVal, setMetaVal] = useState(8.0);
-  const [tankCap, setTankCap] = useState(53);
+  const [metaVal, setMetaVal] = useState(() => parseFloat(localStorage.getItem('smartfuel_meta') || '8.0'));
+  const [tankCap, setTankCap] = useState(() => parseFloat(localStorage.getItem('smartfuel_tank') || '53'));
 
   // Last log values
   const [lastOdoVal, setLastOdoVal] = useState(0);
@@ -62,19 +62,20 @@ export default function App() {
       setAllLogs(logs);
 
       let currentCar = activeCar;
-      let currentMeta = metaVal;
-      let currentTank = tankCap;
+      const localMeta = localStorage.getItem('smartfuel_meta');
+      const localTank = localStorage.getItem('smartfuel_tank');
+      let currentMeta = localMeta ? parseFloat(localMeta) : (d.config ? parseFloat(d.config.meta) : 8.0);
+      let currentTank = localTank ? parseFloat(localTank) : (d.config ? parseFloat(d.config.tank_capacity) : 53);
 
       if (d.config) {
         currentCar = d.config.active_car || "Hyundai I-30";
-        currentMeta = parseFloat(d.config.meta) || 8.0;
-        currentTank = parseFloat(d.config.tank_capacity) || 53;
-        setActiveCar(currentCar);
-        setMetaVal(currentMeta);
-        setTankCap(currentTank);
-        setSettingsTank(currentTank.toString());
-        setSettingsMeta(currentMeta.toString());
       }
+      
+      setActiveCar(currentCar);
+      setMetaVal(currentMeta);
+      setTankCap(currentTank);
+      setSettingsTank(currentTank.toString());
+      setSettingsMeta(currentMeta.toString());
 
       const carLogs = logs.filter((l: any) => l[2] === currentCar);
       // Fallback array matches the new column structure:
@@ -178,7 +179,7 @@ export default function App() {
     <div className="flex justify-center p-4">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V21</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V22</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -256,7 +257,7 @@ export default function App() {
                 <path className="gauge-fill" strokeDashoffset={consOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
               </svg>
               <div className="mt-[-35px] font-black italic text-2xl">
-                <span>{displayKmL > 0 ? displayKmL.toFixed(2) : "--"}</span>
+                <span className={displayKmL < metaVal ? 'text-danger' : 'text-cyan-400'}>{displayKmL > 0 ? displayKmL.toFixed(2) : "--"}</span>
               </div>
             </div>
           </div>
@@ -282,8 +283,8 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`tab-content justify-center h-full ${activeTab === 'charts' ? 'active' : 'hidden'}`}>
-          <div className="panel-sport p-4 h-80 flex flex-col justify-center shadow-2xl">
+        <div className={`tab-content w-full ${activeTab === 'charts' ? 'block' : 'hidden'}`}>
+          <div className="panel-sport w-full p-2 h-80 flex flex-col justify-center shadow-2xl overflow-hidden box-border">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888' }} />
@@ -308,16 +309,22 @@ export default function App() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label>Tanque (L)</label>
-                <input type="number" className="big-input" value={settingsTank} onChange={e => setSettingsTank(e.target.value)} />
+                <input type="number" className="big-input" value={settingsTank} onChange={e => {
+                  setSettingsTank(e.target.value);
+                  const val = parseFloat(e.target.value.replace(',', '.'));
+                  if (!isNaN(val)) { setTankCap(val); localStorage.setItem('smartfuel_tank', val.toString()); }
+                }} />
               </div>
               <div>
                 <label>Meta Km/L</label>
-                <input type="number" className="big-input" value={settingsMeta} onChange={e => setSettingsMeta(e.target.value)} />
+                <input type="number" className="big-input" value={settingsMeta} onChange={e => {
+                  setSettingsMeta(e.target.value);
+                  const val = parseFloat(e.target.value.replace(',', '.'));
+                  if (!isNaN(val)) { setMetaVal(val); localStorage.setItem('smartfuel_meta', val.toString()); }
+                }} />
               </div>
             </div>
-            <label>Adicionar Novo Veículo</label>
-            <input type="text" className="big-input" placeholder="Modelo" value={newCarName} onChange={e => setNewCarName(e.target.value)} />
-            <button onClick={saveNewCar} className="w-full panel-sport p-4 rounded-2xl font-black uppercase text-cyan-500 main-title">Sincronizar</button>
+            <p className="text-[10px] text-center opacity-50 italic uppercase font-bold text-cyan-500">Salvo automaticamente</p>
           </div>
         </div>
 
@@ -341,8 +348,8 @@ export default function App() {
 
       {/* MODAL */}
       {isModalOpen && (
-        <div id="modal" style={{ display: 'flex' }}>
-          <div className="panel-sport w-full p-6 space-y-4 max-h-[95vh] overflow-y-auto">
+        <div id="modal" className="fixed inset-0 z-[6000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md box-border">
+          <div className="panel-sport w-full max-w-[90vw] sm:max-w-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto box-border">
             <h3 className="text-2xl font-black uppercase italic text-cyan-400 text-center main-title">Novo Abastecimento</h3>
             <div>
               <label>Data</label>
