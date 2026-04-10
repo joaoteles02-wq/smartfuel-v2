@@ -179,7 +179,7 @@ export default function App() {
     <div className="flex justify-center p-4">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V23</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V24</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
