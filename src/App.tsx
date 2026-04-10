@@ -179,7 +179,7 @@ export default function App() {
     <div className="flex justify-center p-4">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V22</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V23</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -324,7 +324,13 @@ export default function App() {
                 }} />
               </div>
             </div>
-            <p className="text-[10px] text-center opacity-50 italic uppercase font-bold text-cyan-500">Salvo automaticamente</p>
+            <p className="text-sm text-center opacity-70 italic uppercase font-bold text-cyan-500 mt-2">Salvo automaticamente</p>
+            
+            <div className="pt-4 mt-4 border-t border-white/10">
+              <label>Adicionar Novo Veículo</label>
+              <input type="text" className="big-input mb-3" placeholder="Modelo" value={newCarName} onChange={e => setNewCarName(e.target.value)} />
+              <button onClick={saveNewCar} className="w-full panel-sport p-4 rounded-2xl font-black uppercase text-cyan-500 main-title">Sincronizar Novo Veículo</button>
+            </div>
           </div>
         </div>
 
