@@ -84,12 +84,12 @@ export default function App() {
       const d = await r.json();
       
       const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
-      const deletedArr = deletedStr ? JSON.parse(deletedStr) : [];
+      const deletedArr = deletedStr ? JSON.parse(deletedStr).map(String) : [];
 
       // Filter out rows without a valid date, and filter out locally deleted logs
       const logs = (d.logs || d).filter((l: any) => 
         l[1] != null && String(l[1]).trim() !== "" && 
-        (!l[0] || !deletedArr.includes(l[0]))
+        (!l[0] || !deletedArr.includes(String(l[0])))
       );
       setAllLogs(logs);
 
@@ -187,17 +187,19 @@ export default function App() {
     });
   }, [allLogs, activeCar]);
   const chartData = useMemo(() => {
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     return carLogs.slice(-8).map(l => {
       let dateLabel = '';
       if (typeof l[1] === 'string' && l[1].includes('T')) {
-        const parts = l[1].split('T')[0].split('-');
-        if (parts.length === 3) dateLabel = `${parts[2]}/${parts[1]}`;
+        const d = new Date(l[1]);
+        dateLabel = monthNames[d.getUTCMonth()];
       } else {
         dateLabel = String(l[1]).substring(0, 5);
       }
       return {
         date: dateLabel,
-        kmL: parseFloat(String(l[12]).replace(',', '.')) || 0
+        kmL: parseFloat(String(l[12]).replace(',', '.')) || 0,
+        unitPrice: parseFloat(String(l[11]).replace(',', '.')) || 0
       };
     });
   }, [carLogs]);
@@ -239,20 +241,20 @@ export default function App() {
     setLogToDelete(null);
     
     const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
-    const deletedArr = deletedStr ? JSON.parse(deletedStr) : [];
-    if (!deletedArr.includes(id)) {
-      deletedArr.push(id);
+    const deletedArr = deletedStr ? JSON.parse(deletedStr).map(String) : [];
+    if (!deletedArr.includes(String(id))) {
+      deletedArr.push(String(id));
       localStorage.setItem('smartfuel_deleted_logs', JSON.stringify(deletedArr));
     }
     
-    setAllLogs(prev => prev.filter(l => l[0] !== id));
+    setAllLogs(prev => prev.filter(l => String(l[0]) !== String(id)));
   };
 
   return (
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V43</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V44</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -394,13 +396,25 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`tab-content w-full ${activeTab === 'charts' ? 'block' : 'hidden'}`}>
-          <div className="panel-sport w-full p-2 h-80 flex flex-col justify-center shadow-2xl overflow-hidden box-border">
+        <div className={`tab-content w-full space-y-4 ${activeTab === 'charts' ? 'block' : 'hidden'}`}>
+          <div className="panel-sport w-full p-2 h-64 flex flex-col justify-center shadow-2xl overflow-hidden box-border relative">
+            <p className="text-[10px] font-black uppercase opacity-40 main-title absolute top-2 left-4">Consumo</p>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888' }} />
-                <YAxis stroke="#888" tick={{ fill: '#888' }} />
-                <Line type="monotone" dataKey="kmL" stroke="#1e40af" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#1e40af' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
+              <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888', fontSize: 10 }} />
+                <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 10 }} label={{ value: isElectric ? 'Km/kWh' : 'Km/L', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 10, offset: 15 }} />
+                <Line type="monotone" dataKey="kmL" stroke="#1e40af" strokeWidth={3} dot={{ r: 4, fill: '#1e40af' }} activeDot={{ r: 6, fill: '#1e40af' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="panel-sport w-full p-2 h-64 flex flex-col justify-center shadow-2xl overflow-hidden box-border relative">
+            <p className="text-[10px] font-black uppercase opacity-40 main-title absolute top-2 left-4">Preço Unitário</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888', fontSize: 10 }} />
+                <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 10 }} label={{ value: 'Unit (R$)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 10, offset: 15 }} />
+                <Line type="monotone" dataKey="unitPrice" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6, fill: '#10b981' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
