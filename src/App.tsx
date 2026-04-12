@@ -237,7 +237,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V36</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V37</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -324,6 +324,19 @@ export default function App() {
 
         {/* TABS AUXILIARES */}
         <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-black uppercase italic main-title">Histórico</h2>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('smartfuel_deleted_logs');
+                setBooting(true);
+                sync();
+              }}
+              className="panel-sport px-4 py-2 text-xs font-bold uppercase text-cyan-400 hover:bg-cyan-900/30 transition-colors"
+            >
+              Sincronizar Planilha
+            </button>
+          </div>
           <div className="space-y-3 pb-20">
             {carLogs.slice().reverse().map((l, i) => {
               const kmLNum = parseFloat(String(l[12]).replace(',', '.'));
