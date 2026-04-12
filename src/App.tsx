@@ -248,7 +248,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V39</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V41</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -339,7 +339,6 @@ export default function App() {
             <h2 className="text-lg font-black uppercase italic main-title">Histórico</h2>
             <button 
               onClick={() => {
-                localStorage.removeItem('smartfuel_deleted_logs');
                 setBooting(true);
                 sync();
               }}
@@ -460,11 +459,17 @@ export default function App() {
             </div>
 
             <div className="mt-8 p-4 bg-black/20 rounded-xl border border-white/5">
-              <p className="text-xs opacity-50 font-mono">
-                Diagnóstico de Dados:<br/>
-                Total de registros na planilha: {allLogs.length}<br/>
-                Registros do carro atual ({activeCar}): {carLogs.length}
-              </p>
+              <button 
+                onClick={() => {
+                  if(window.confirm("Isso vai apagar toda a memória do aplicativo no seu celular (não apaga a planilha). Deseja continuar?")) {
+                    localStorage.clear();
+                    window.location.reload();
+                  }
+                }}
+                className="w-full py-2 border border-red-500/30 text-red-500 rounded-lg uppercase font-bold text-xs"
+              >
+                Resetar Aplicativo (Limpar Cache)
+              </button>
             </div>
           </div>
         </div>
