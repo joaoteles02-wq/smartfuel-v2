@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { Trash2 } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANdYyg2a8jYZdB1_O3BwslsRP4AmGjdBgwsfNxpYTkHtg/exec";
 
@@ -61,6 +62,7 @@ export default function App() {
   const [settingsMeta, setSettingsMeta] = useState('');
   const [settingsFuel, setSettingsFuel] = useState('Gasolina');
   const [newCarName, setNewCarName] = useState('');
+  const [logToDelete, setLogToDelete] = useState<any>(null);
 
   const sync = async (carOverride?: string) => {
     try {
@@ -214,11 +216,25 @@ export default function App() {
     sync();
   };
 
+  const confirmDelete = async (id: any) => {
+    setLogToDelete(null);
+    setBooting(true);
+    try {
+      await fetch(URL, { 
+        method: 'POST', 
+        body: JSON.stringify({ action: 'delete', id: id }) 
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    sync();
+  };
+
   return (
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V33</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V34</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -314,8 +330,13 @@ export default function App() {
               return (
                 <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
                   <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
+                        <button onClick={() => setLogToDelete(l)} className="p-1 text-red-500/50 hover:text-red-500">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                       <p className="text-sm opacity-60 main-title">{formatDate(l[1])}</p>
                     </div>
                     <div className="text-right">
@@ -493,6 +514,31 @@ export default function App() {
             <div className="flex gap-4 pt-4 pb-4">
               <button onClick={() => setIsModalOpen(false)} className="flex-1 font-black opacity-60 uppercase text-lg main-title">Sair</button>
               <button onClick={saveData} className="flex-1 panel-sport p-4 rounded-2xl font-black uppercase text-xl main-title btn-save-text">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {logToDelete && (
+        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-zinc-900 p-6 rounded-2xl border border-white/10 w-full max-w-sm">
+            <h3 className="text-xl font-black text-red-500 mb-4 uppercase">Excluir Registro?</h3>
+            <p className="text-sm opacity-80 mb-6">
+              Tem certeza que deseja excluir o abastecimento do dia {formatDate(logToDelete[1])} no valor de R$ {String(logToDelete[11]).replace('.', ',')}?
+            </p>
+            <div className="flex gap-4">
+              <button 
+                className="flex-1 py-3 rounded-xl bg-zinc-800 font-bold"
+                onClick={() => setLogToDelete(null)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="flex-1 py-3 rounded-xl bg-red-600 font-bold text-white"
+                onClick={() => confirmDelete(logToDelete[0])}
+              >
+                Excluir
+              </button>
             </div>
           </div>
         </div>
