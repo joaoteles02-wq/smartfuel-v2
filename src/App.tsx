@@ -183,7 +183,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V29</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V30</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -271,36 +271,32 @@ export default function App() {
         {/* TABS AUXILIARES */}
         <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
           <div className="space-y-3 pb-20">
-            {carLogs.slice().reverse().map((l, i) => {
-              const kmL = parseFloat(String(l[12] || '0').replace(',', '.')) || 0;
-              const isDanger = kmL < metaVal;
-              const tot = parseFloat(String(l[10] || '0').replace(',', '.')) || 0;
-              const lit = parseFloat(String(l[8] || '0').replace(',', '.')) || 0;
-              const unitPrice = (tot > 0 && lit > 0) ? (tot / lit) : (parseFloat(String(l[11] || '0').replace(',', '.')) || 0);
-
-              return (
-                <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
-                      <p className="text-xs opacity-50 main-title">{new Date(l[1]).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">
-                        <span className={isDanger ? 'text-danger' : 'text-black'}>{kmL.toFixed(2)}</span>
-                        <span className={isDanger ? 'text-danger' : 'text-cyan-400'}> Km/L</span>
-                      </p>
-                    </div>
+            {carLogs.slice().reverse().map((l, i) => (
+              <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
+                    <p className="text-xs opacity-50 main-title">{new Date(l[1]).toLocaleDateString()}</p>
                   </div>
-                  <div className="flex justify-between items-center text-xs font-black opacity-50 uppercase main-title mt-2 border-t border-white/10 pt-2">
-                    <span>R$ {unitPrice.toFixed(2).replace('.', ',')}</span>
-                    <span>{settingsFuel}</span>
-                    <span>{l[3]} KM</span>
-                    <span>{l[8]} L</span>
+                  <div className="text-right">
+                    <p className="text-lg font-bold">
+                      <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-black'}>
+                        {parseFloat(l[12]).toFixed(2)}
+                      </span>
+                      <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-cyan-400'}>
+                        {' '}Km/L
+                      </span>
+                    </p>
                   </div>
                 </div>
-              );
-            })}
+                <div className="flex justify-between items-center text-xs font-black opacity-50 uppercase main-title mt-2 border-t border-white/10 pt-2">
+                  <span>R$ {parseFloat(l[11] || 0).toFixed(2)}</span>
+                  <span>{settingsFuel}</span>
+                  <span>{l[3]} KM</span>
+                  <span>{l[8]} L</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
