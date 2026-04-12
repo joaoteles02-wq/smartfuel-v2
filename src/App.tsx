@@ -10,14 +10,13 @@ const formatDate = (dateStr: any) => {
     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
     return d.toLocaleDateString('pt-BR');
   }
-  if (typeof dateStr === 'string' && dateStr.includes('/')) {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      let year = parseInt(parts[2], 10);
-      if (year < 100) year += 2000;
-      return new Date(year, month, day).toLocaleDateString('pt-BR');
+  if (typeof dateStr === 'string') {
+    if (dateStr.includes('T')) {
+      const parts = dateStr.split('T')[0].split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    if (dateStr.includes('/')) {
+      return dateStr;
     }
   }
   const d = new Date(dateStr);
@@ -167,10 +166,19 @@ export default function App() {
 
   const carLogs = useMemo(() => allLogs.filter(l => l[2] === activeCar), [allLogs, activeCar]);
   const chartData = useMemo(() => {
-    return carLogs.slice(-8).map(l => ({
-      date: l[1].split('T')[0].substring(5),
-      kmL: parseFloat(l[12])
-    }));
+    return carLogs.slice(-8).map(l => {
+      let dateLabel = '';
+      if (typeof l[1] === 'string' && l[1].includes('T')) {
+        const parts = l[1].split('T')[0].split('-');
+        if (parts.length === 3) dateLabel = `${parts[2]}/${parts[1]}`;
+      } else {
+        dateLabel = String(l[1]).substring(0, 5);
+      }
+      return {
+        date: dateLabel,
+        kmL: parseFloat(String(l[12]).replace(',', '.')) || 0
+      };
+    });
   }, [carLogs]);
 
   // Unique cars for select
@@ -210,7 +218,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V32</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V33</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -298,27 +306,38 @@ export default function App() {
         {/* TABS AUXILIARES */}
         <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
           <div className="space-y-3 pb-20">
-            {carLogs.slice().reverse().map((l, i) => (
-              <div key={i} className="panel-sport p-5 flex justify-between items-center mb-3 border-none bg-zinc-900/10">
-                <div>
-                  <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
-                  <p className="text-xs opacity-50 main-title">{formatDate(l[1])}</p>
+            {carLogs.slice().reverse().map((l, i) => {
+              const kmLNum = parseFloat(String(l[12]).replace(',', '.'));
+              const isDanger = !isNaN(kmLNum) && kmLNum < metaVal;
+              const kmLDisplay = !isNaN(kmLNum) ? kmLNum.toFixed(2).replace('.', ',') : String(l[12] || '---');
+
+              return (
+                <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
+                      <p className="text-sm opacity-60 main-title">{formatDate(l[1])}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">
+                        <span className={isDanger ? 'text-danger' : 'text-[var(--text)]'}>
+                          {kmLDisplay}
+                        </span>
+                        <span className={isDanger ? 'text-danger' : 'text-[var(--text)]'}>
+                          {' '}Km/L
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-black opacity-60 uppercase main-title mt-2 border-t border-white/10 pt-2">
+                    <span>{l[11] ? `R$ ${String(l[11]).replace('.', ',')}` : '---'}</span>
+                    <span>{settingsFuel}</span>
+                    <span>{l[3]} KM</span>
+                    <span>{l[8]} L</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold">
-                    <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-[var(--text)]'}>
-                      {parseFloat(l[12]).toFixed(2)}
-                    </span>
-                    <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-[var(--text)]'}>
-                      {' '}Km/L
-                    </span>
-                  </p>
-                  <p className="text-[10px] font-black opacity-50 uppercase main-title mt-1">
-                    {l[11] ? `R$ ${l[11]}` : '---'} | {settingsFuel} | {l[3]} KM | {l[8]} L
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
