@@ -3,6 +3,27 @@ import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANdYyg2a8jYZdB1_O3BwslsRP4AmGjdBgwsfNxpYTkHtg/exec";
 
+const formatDate = (dateStr: any) => {
+  if (!dateStr) return '';
+  if (typeof dateStr === 'number') {
+    const d = new Date((dateStr - 25569) * 86400 * 1000);
+    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+    return d.toLocaleDateString('pt-BR');
+  }
+  if (typeof dateStr === 'string' && dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      let year = parseInt(parts[2], 10);
+      if (year < 100) year += 2000;
+      return new Date(year, month, day).toLocaleDateString('pt-BR');
+    }
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? String(dateStr) : d.toLocaleDateString('pt-BR');
+};
+
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -42,7 +63,7 @@ export default function App() {
   const [settingsFuel, setSettingsFuel] = useState('Gasolina');
   const [newCarName, setNewCarName] = useState('');
 
-  const sync = async () => {
+  const sync = async (carOverride?: string) => {
     try {
       setFetchError(null);
       const r = await fetch(URL);
@@ -58,22 +79,28 @@ export default function App() {
       }
 
       const d = await r.json();
-      // Filter out empty rows and rows without a valid odometer reading
-      const logs = (d.logs || d).filter((l: any) => l[0] !== "" && l[1] !== "" && l[3] !== "");
+      // Filter out rows without a valid date and odometer reading
+      const logs = (d.logs || d).filter((l: any) => l[1] && l[3]);
       setAllLogs(logs);
 
-      let currentCar = activeCar;
+      let currentCar = carOverride || activeCar;
+      const localCar = localStorage.getItem('smartfuel_active_car');
       const localMeta = localStorage.getItem('smartfuel_meta');
       const localTank = localStorage.getItem('smartfuel_tank');
       const localFuel = localStorage.getItem('smartfuel_fuel');
+      
+      if (carOverride) {
+        currentCar = carOverride;
+      } else if (localCar) {
+        currentCar = localCar;
+      } else if (d.config && d.config.active_car) {
+        currentCar = d.config.active_car;
+      }
+
       let currentMeta = localMeta ? parseFloat(localMeta) : (d.config ? parseFloat(d.config.meta) : 8.0);
       let currentTank = localTank ? parseFloat(localTank) : (d.config ? parseFloat(d.config.tank_capacity) : 53);
       let currentFuel = localFuel ? localFuel : 'Gasolina';
 
-      if (d.config) {
-        currentCar = d.config.active_car || "Hyundai I-30";
-      }
-      
       setActiveCar(currentCar);
       setMetaVal(currentMeta);
       setTankCap(currentTank);
@@ -183,7 +210,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V30</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V32</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -272,28 +299,23 @@ export default function App() {
         <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
           <div className="space-y-3 pb-20">
             {carLogs.slice().reverse().map((l, i) => (
-              <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
-                    <p className="text-xs opacity-50 main-title">{new Date(l[1]).toLocaleDateString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">
-                      <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-black'}>
-                        {parseFloat(l[12]).toFixed(2)}
-                      </span>
-                      <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-cyan-400'}>
-                        {' '}Km/L
-                      </span>
-                    </p>
-                  </div>
+              <div key={i} className="panel-sport p-5 flex justify-between items-center mb-3 border-none bg-zinc-900/10">
+                <div>
+                  <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
+                  <p className="text-xs opacity-50 main-title">{formatDate(l[1])}</p>
                 </div>
-                <div className="flex justify-between items-center text-xs font-black opacity-50 uppercase main-title mt-2 border-t border-white/10 pt-2">
-                  <span>R$ {parseFloat(l[11] || 0).toFixed(2)}</span>
-                  <span>{settingsFuel}</span>
-                  <span>{l[3]} KM</span>
-                  <span>{l[8]} L</span>
+                <div className="text-right">
+                  <p className="text-lg font-bold">
+                    <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-[var(--text)]'}>
+                      {parseFloat(l[12]).toFixed(2)}
+                    </span>
+                    <span className={parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-[var(--text)]'}>
+                      {' '}Km/L
+                    </span>
+                  </p>
+                  <p className="text-[10px] font-black opacity-50 uppercase main-title mt-1">
+                    {l[11] ? `R$ ${l[11]}` : '---'} | {settingsFuel} | {l[3]} KM | {l[8]} L
+                  </p>
                 </div>
               </div>
             ))}
@@ -319,7 +341,13 @@ export default function App() {
             <select 
               className="big-input" 
               value={activeCar} 
-              onChange={(e) => { setActiveCar(e.target.value); setBooting(true); sync(); }}
+              onChange={(e) => { 
+                const newCar = e.target.value;
+                setActiveCar(newCar); 
+                localStorage.setItem('smartfuel_active_car', newCar);
+                setBooting(true); 
+                sync(newCar); 
+              }}
             >
               {availableCars.map(car => <option key={car} value={car}>{car}</option>)}
             </select>
