@@ -157,6 +157,8 @@ export default function App() {
     }
   }, [theme]);
 
+  const isElectric = settingsFuel === 'Elétrico';
+
   // Derived calculations
   const trip = Math.max(0, currentOdo - lastOdoVal);
   
@@ -250,7 +252,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V42</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V43</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -278,9 +280,9 @@ export default function App() {
               </button>
               <button 
                 onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} 
-                className="panel-sport px-5 py-2 text-[12px] font-black uppercase rounded-full main-title"
+                className="panel-sport w-10 h-10 flex items-center justify-center rounded-full text-xl"
               >
-                🌓 MODO
+                {theme === 'dark' ? '☀️' : '🌙'}
               </button>
             </div>
           </div>
@@ -296,7 +298,7 @@ export default function App() {
         <div className={`tab-content space-y-4 ${activeTab === 'home' ? 'active' : 'hidden'}`}>
           <div className="grid grid-cols-2 gap-4">
             <div className="panel-sport p-4 text-center">
-              <p className="text-[10px] font-black uppercase mb-3 opacity-60 text-cyan-500">Gasto (L)</p>
+              <p className="text-[10px] font-black opacity-40 uppercase mb-3 main-title">{isElectric ? 'Energia (kWh)' : 'Gasto (L)'}</p>
               <svg className="w-full h-20" viewBox="0 0 140 80">
                 <path fill="none" stroke="rgba(128,128,128,0.2)" strokeWidth="12" d="M 20 70 A 50 50 0 1 1 120 70" />
                 <path className="gauge-fill" strokeDashoffset={spentOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
@@ -304,12 +306,12 @@ export default function App() {
               <div className="mt-[-40px] font-black italic text-2xl">{spent.toFixed(2)}</div>
             </div>
             <div className="panel-sport p-4 text-center">
-              <p className="text-[10px] font-black uppercase mb-3 opacity-60 text-cyan-500">Tanque (L)</p>
+              <p className="text-[10px] font-black opacity-40 uppercase mb-3 main-title">{isElectric ? 'Bateria (%)' : 'Tanque (L)'}</p>
               <svg className="w-full h-20" viewBox="0 0 140 80">
                 <path fill="none" stroke="rgba(128,128,128,0.2)" strokeWidth="12" d="M 20 70 A 50 50 0 1 1 120 70" />
                 <path className="gauge-fill" strokeDashoffset={tankOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
               </svg>
-              <div className="mt-[-40px] font-black italic text-2xl">{remaining.toFixed(1)}</div>
+              <div className="mt-[-40px] font-black italic text-2xl">{isElectric ? Math.max(0, ((tankCap - spent) / tankCap) * 100).toFixed(1) + '%' : remaining.toFixed(1)}</div>
             </div>
           </div>
 
@@ -331,17 +333,18 @@ export default function App() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="panel-sport p-4 text-center flex flex-col justify-center">
-              <p className="text-[10px] font-black uppercase mb-1 opacity-60 text-cyan-400">Km Percorrido</p>
+              <p className="text-[10px] font-black opacity-40 uppercase mb-1 main-title">Km Percorrido</p>
               <span className="text-4xl font-black italic tracking-tighter main-title">{trip.toFixed(0)}</span>
             </div>
             <div className="panel-sport p-4 text-center">
-              <p className="text-[10px] font-black uppercase mb-3 opacity-60 text-cyan-500">Consumo (Km/L)</p>
+              <p className="text-[10px] font-black opacity-40 uppercase mb-3 main-title">{isElectric ? 'Consumo (Km/kWh)' : 'Consumo (Km/L)'}</p>
               <svg className="w-full h-16" viewBox="0 0 140 80">
                 <path fill="none" stroke="rgba(128,128,128,0.2)" strokeWidth="10" d="M 20 70 A 50 50 0 1 1 120 70" />
                 <path className="gauge-fill" strokeDashoffset={consOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
               </svg>
-              <div className="mt-[-35px] font-black italic text-2xl">
-                <span className={displayKmL < metaVal ? 'text-danger' : 'text-cyan-400'}>{displayKmL > 0 ? displayKmL.toFixed(2) : "--"}</span>
+              <div className="mt-[-35px] font-black italic text-2xl flex flex-col items-center">
+                <span className={lastKmL < metaVal ? 'text-danger' : 'text-cyan-400'}>{lastKmL > 0 ? lastKmL.toFixed(2) : "--"}</span>
+                <span className="text-[9px] text-gray-400 font-normal mt-1">{carLogs.length > 0 ? formatDate(carLogs[carLogs.length - 1][1]) : '--/--/----'}</span>
               </div>
             </div>
           </div>
@@ -422,7 +425,7 @@ export default function App() {
             </select>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label>Tanque (L)</label>
+                <label>{isElectric ? 'Bateria (kWh)' : 'Tanque (L)'}</label>
                 <input type="number" inputMode="decimal" className="big-input" value={settingsTank} onChange={e => {
                   setSettingsTank(e.target.value);
                   const val = parseFloat(e.target.value.replace(',', '.'));
@@ -430,7 +433,7 @@ export default function App() {
                 }} />
               </div>
               <div>
-                <label>Meta Km/L</label>
+                <label>{isElectric ? 'Meta Km/kWh' : 'Meta Km/L'}</label>
                 <input type="number" inputMode="decimal" className="big-input" value={settingsMeta} onChange={e => {
                   setSettingsMeta(e.target.value);
                   const val = parseFloat(e.target.value.replace(',', '.'));
@@ -520,12 +523,12 @@ export default function App() {
               </div>
             </div>
             <div>
-              <label>Litros</label>
+              <label>{isElectric ? 'Energia (kWh)' : 'Litros'}</label>
               <input type="number" inputMode="decimal" step="0.01" className="big-input" value={modalLit} onChange={e => setModalLit(e.target.value)} />
             </div>
             <div>
-              <label>Posto</label>
-              <input type="text" list="postos-list" className="big-input" placeholder="Posto..." value={modalSt} onChange={e => setModalSt(e.target.value)} />
+              <label>{isElectric ? 'Local de Recarga' : 'Posto'}</label>
+              <input type="text" list="postos-list" className="big-input" placeholder={isElectric ? 'Local...' : 'Posto...'} value={modalSt} onChange={e => setModalSt(e.target.value)} />
               <datalist id="postos-list">
                 {Array.from(new Set(allLogs.map(l => l[9]).filter(Boolean))).map(posto => (
                   <option key={posto as string} value={posto as string} />
@@ -533,7 +536,7 @@ export default function App() {
               </datalist>
             </div>
             <div>
-              <label>Nível do Tanque</label>
+              <label>{isElectric ? 'Nível da Bateria' : 'Nível do Tanque'}</label>
               <div className="flex">
                 <button 
                   onClick={() => setModalTank('Full Tank - refresh')} 
