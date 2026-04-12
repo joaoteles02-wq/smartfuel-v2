@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import { Trash2 } from 'lucide-react';
+import { Trash2, RefreshCw } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANdYyg2a8jYZdB1_O3BwslsRP4AmGjdBgwsfNxpYTkHtg/exec";
 
@@ -51,13 +51,13 @@ export default function App() {
   // Modal inputs
   const [modalDate, setModalDate] = useState(new Date().toISOString().split('T')[0]);
   const [modalOdo, setModalOdo] = useState('');
-  const [modalOil, setModalOil] = useState('');
   const [modalLit, setModalLit] = useState('');
   const [modalSt, setModalSt] = useState('');
   const [modalTank, setModalTank] = useState('Full Tank - refresh');
   const [modalTot, setModalTot] = useState('');
 
   // Settings inputs
+  const [settingsOil, setSettingsOil] = useState('');
   const [settingsTank, setSettingsTank] = useState('');
   const [settingsMeta, setSettingsMeta] = useState('');
   const [settingsFuel, setSettingsFuel] = useState('Gasolina');
@@ -98,6 +98,7 @@ export default function App() {
       const localMeta = localStorage.getItem('smartfuel_meta');
       const localTank = localStorage.getItem('smartfuel_tank');
       const localFuel = localStorage.getItem('smartfuel_fuel');
+      const localOil = localStorage.getItem('smartfuel_oil');
       
       if (carOverride) {
         currentCar = carOverride;
@@ -117,6 +118,7 @@ export default function App() {
       setSettingsTank(currentTank.toString());
       setSettingsMeta(currentMeta.toString());
       setSettingsFuel(currentFuel);
+      setSettingsOil(localOil || '');
 
       const carLogs = logs.filter((l: any) => l[2] === currentCar);
       // Fallback array matches the new column structure:
@@ -209,7 +211,7 @@ export default function App() {
     const p = {
       carType: activeCar,
       odo: modalOdo,
-      dist: modalOil,
+      dist: settingsOil,
       liters: modalLit,
       total: modalTot,
       station: modalSt,
@@ -248,7 +250,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V41</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V42</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -263,12 +265,24 @@ export default function App() {
         <header className="mb-4 px-2">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-3xl font-black italic tracking-tighter uppercase main-title">Smart Fuel</h1>
-            <button 
-              onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} 
-              className="panel-sport px-5 py-2 text-[12px] font-black uppercase rounded-full main-title"
-            >
-              🌓 MODO
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  setBooting(true);
+                  sync();
+                }}
+                className="panel-sport w-10 h-10 flex items-center justify-center rounded-full text-cyan-400 hover:text-cyan-300 transition-colors"
+                title="Sincronizar Planilha"
+              >
+                <RefreshCw size={18} />
+              </button>
+              <button 
+                onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} 
+                className="panel-sport px-5 py-2 text-[12px] font-black uppercase rounded-full main-title"
+              >
+                🌓 MODO
+              </button>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm font-black text-cyan-500 uppercase tracking-widest">{activeCar || '---'}</span>
@@ -337,15 +351,6 @@ export default function App() {
         <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-black uppercase italic main-title">Histórico</h2>
-            <button 
-              onClick={() => {
-                setBooting(true);
-                sync();
-              }}
-              className="panel-sport px-4 py-2 text-xs font-bold uppercase text-cyan-400 hover:bg-cyan-900/30 transition-colors"
-            >
-              Sincronizar Planilha
-            </button>
           </div>
           <div className="space-y-3 pb-20">
             {carLogs.slice().reverse().map((l, i) => {
@@ -434,6 +439,13 @@ export default function App() {
               </div>
             </div>
             <div>
+              <label>Troca Óleo (Km)</label>
+              <input type="number" inputMode="decimal" className="big-input" value={settingsOil} onChange={e => {
+                setSettingsOil(e.target.value);
+                localStorage.setItem('smartfuel_oil', e.target.value);
+              }} />
+            </div>
+            <div>
               <label>Combustível</label>
               <select 
                 className="big-input" 
@@ -501,14 +513,10 @@ export default function App() {
               <label>Data</label>
               <input type="date" className="big-input" value={modalDate} onChange={e => setModalDate(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label>Odômetro</label>
                 <input type="number" inputMode="decimal" className="big-input" value={modalOdo} onChange={e => setModalOdo(e.target.value)} />
-              </div>
-              <div>
-                <label>Troca Óleo (Km)</label>
-                <input type="number" inputMode="decimal" className="big-input" value={modalOil} onChange={e => setModalOil(e.target.value)} />
               </div>
             </div>
             <div>
