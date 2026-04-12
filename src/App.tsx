@@ -67,7 +67,9 @@ export default function App() {
   const sync = async (carOverride?: string) => {
     try {
       setFetchError(null);
-      const r = await fetch(URL);
+      // Add a timestamp to the URL to prevent browser caching
+      const noCacheUrl = `${URL}?t=${new Date().getTime()}`;
+      const r = await fetch(noCacheUrl);
       
       // Check if the response is HTML (which means an Apps Script error)
       const contentType = r.headers.get("content-type");
@@ -85,7 +87,11 @@ export default function App() {
       const deletedArr = deletedStr ? JSON.parse(deletedStr) : [];
 
       // Filter out rows without a valid date and odometer reading, and filter out locally deleted logs
-      const logs = (d.logs || d).filter((l: any) => l[1] && l[3] && !deletedArr.includes(l[0]));
+      const logs = (d.logs || d).filter((l: any) => 
+        l[1] != null && l[1] !== "" && 
+        l[3] != null && l[3] !== "" && 
+        !deletedArr.includes(l[0])
+      );
       setAllLogs(logs);
 
       let currentCar = carOverride || activeCar;
@@ -237,7 +243,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V37</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V38</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
