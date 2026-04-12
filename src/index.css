@@ -176,7 +176,12 @@ body.light-mode .gauge-fill {
     height: 72px; 
     background: var(--nav-bg); 
     backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.2); 
+    -webkit-backdrop-filter: blur(30px);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     border-radius: 24px; 
     display: flex; 
     justify-content: space-around; 

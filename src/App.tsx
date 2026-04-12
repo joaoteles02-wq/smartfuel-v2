@@ -179,7 +179,7 @@ export default function App() {
     <div className="flex justify-center p-4">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V25</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V26</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -190,7 +190,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="w-full max-w-sm h-full flex flex-col pt-12">
+      <div className="w-full max-w-sm h-full flex flex-col pt-2">
         <header className="mb-4 px-2">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-3xl font-black italic tracking-tighter uppercase main-title">Smart Fuel</h1>
@@ -236,6 +236,7 @@ export default function App() {
               <div className="lcd-display py-2">
                 <input 
                   type="number" 
+                  inputMode="decimal"
                   className="odo-input" 
                   style={{ textShadow: theme === 'dark' ? '0 0 10px var(--neon), 0 0 20px var(--neon)' : 'none', letterSpacing: '2px' }}
                   value={currentOdo} 
@@ -289,7 +290,7 @@ export default function App() {
               <LineChart data={chartData}>
                 <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888' }} />
                 <YAxis stroke="#888" tick={{ fill: '#888' }} />
-                <Line type="monotone" dataKey="kmL" stroke="#00f2ff" strokeWidth={2} dot={{ r: 4, fill: '#00f2ff' }} />
+                <Line type="monotone" dataKey="kmL" stroke="#1e40af" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#1e40af' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -309,7 +310,7 @@ export default function App() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label>Tanque (L)</label>
-                <input type="number" className="big-input" value={settingsTank} onChange={e => {
+                <input type="number" inputMode="decimal" className="big-input" value={settingsTank} onChange={e => {
                   setSettingsTank(e.target.value);
                   const val = parseFloat(e.target.value.replace(',', '.'));
                   if (!isNaN(val)) { setTankCap(val); localStorage.setItem('smartfuel_tank', val.toString()); }
@@ -317,7 +318,7 @@ export default function App() {
               </div>
               <div>
                 <label>Meta Km/L</label>
-                <input type="number" className="big-input" value={settingsMeta} onChange={e => {
+                <input type="number" inputMode="decimal" className="big-input" value={settingsMeta} onChange={e => {
                   setSettingsMeta(e.target.value);
                   const val = parseFloat(e.target.value.replace(',', '.'));
                   if (!isNaN(val)) { setMetaVal(val); localStorage.setItem('smartfuel_meta', val.toString()); }
@@ -364,16 +365,16 @@ export default function App() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label>Odômetro</label>
-                <input type="number" className="big-input" value={modalOdo} onChange={e => setModalOdo(e.target.value)} />
+                <input type="number" inputMode="decimal" className="big-input" value={modalOdo} onChange={e => setModalOdo(e.target.value)} />
               </div>
               <div>
                 <label>Troca Óleo (Km)</label>
-                <input type="number" className="big-input" value={modalOil} onChange={e => setModalOil(e.target.value)} />
+                <input type="number" inputMode="decimal" className="big-input" value={modalOil} onChange={e => setModalOil(e.target.value)} />
               </div>
             </div>
             <div>
               <label>Litros</label>
-              <input type="number" step="0.01" className="big-input" value={modalLit} onChange={e => setModalLit(e.target.value)} />
+              <input type="number" inputMode="decimal" step="0.01" className="big-input" value={modalLit} onChange={e => setModalLit(e.target.value)} />
             </div>
             <div>
               <label>Posto</label>
@@ -403,7 +404,7 @@ export default function App() {
             </div>
             <div>
               <label>Total R$</label>
-              <input type="number" step="0.01" className="big-input" value={modalTot} onChange={e => setModalTot(e.target.value)} />
+              <input type="number" inputMode="decimal" step="0.01" className="big-input" value={modalTot} onChange={e => setModalTot(e.target.value)} />
             </div>
             <div className="lcd-display p-4 text-center bg-cyan-400">
               <label className="text-black font-black uppercase">Preço Unitário</label>
