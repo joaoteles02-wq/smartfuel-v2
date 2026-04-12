@@ -39,6 +39,7 @@ export default function App() {
   // Settings inputs
   const [settingsTank, setSettingsTank] = useState('');
   const [settingsMeta, setSettingsMeta] = useState('');
+  const [settingsFuel, setSettingsFuel] = useState('Gasolina');
   const [newCarName, setNewCarName] = useState('');
 
   const sync = async () => {
@@ -64,8 +65,10 @@ export default function App() {
       let currentCar = activeCar;
       const localMeta = localStorage.getItem('smartfuel_meta');
       const localTank = localStorage.getItem('smartfuel_tank');
+      const localFuel = localStorage.getItem('smartfuel_fuel');
       let currentMeta = localMeta ? parseFloat(localMeta) : (d.config ? parseFloat(d.config.meta) : 8.0);
       let currentTank = localTank ? parseFloat(localTank) : (d.config ? parseFloat(d.config.tank_capacity) : 53);
+      let currentFuel = localFuel ? localFuel : 'Gasolina';
 
       if (d.config) {
         currentCar = d.config.active_car || "Hyundai I-30";
@@ -76,6 +79,7 @@ export default function App() {
       setTankCap(currentTank);
       setSettingsTank(currentTank.toString());
       setSettingsMeta(currentMeta.toString());
+      setSettingsFuel(currentFuel);
 
       const carLogs = logs.filter((l: any) => l[2] === currentCar);
       // Fallback array matches the new column structure:
@@ -179,7 +183,7 @@ export default function App() {
     <div className="flex justify-center p-4">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V26</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V27</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -268,16 +272,27 @@ export default function App() {
         <div className={`tab-content ${activeTab === 'history' ? 'active' : 'hidden'}`}>
           <div className="space-y-3 pb-20">
             {carLogs.slice().reverse().map((l, i) => (
-              <div key={i} className="panel-sport p-5 flex justify-between items-center mb-3 border-none bg-zinc-900/10">
-                <div>
-                  <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
-                  <p className="text-xs opacity-50 main-title">{new Date(l[1]).toLocaleDateString()}</p>
+              <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
+                <div className="flex justify-between items-center mb-2">
+                  <div>
+                    <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
+                    <p className="text-base font-bold opacity-80 main-title">{new Date(l[1]).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-lg font-bold ${parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-black'}`}>
+                      {parseFloat(l[12]).toFixed(2)} Km/L
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className={`text-lg font-bold ${parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-cyan-400'}`}>
-                    {parseFloat(l[12]).toFixed(2)} Km/L
-                  </p>
-                  <p className="text-xs font-black opacity-30 uppercase main-title">{l[3]} KM | {l[8]} L</p>
+                <div className="grid grid-cols-2 gap-2 text-base font-black opacity-80 uppercase main-title mt-2 border-t border-white/10 pt-2">
+                  <div>
+                    <p>Odo: <span className="text-lg">{l[3]} KM</span></p>
+                    <p>Litros: <span className="text-lg">{l[8]} L</span></p>
+                  </div>
+                  <div className="text-right">
+                    <p>Preço: <span className="text-lg">R$ {parseFloat(l[11] || 0).toFixed(2)}</span></p>
+                    <p>Comb.: <span className="text-lg">{settingsFuel}</span></p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -324,6 +339,23 @@ export default function App() {
                   if (!isNaN(val)) { setMetaVal(val); localStorage.setItem('smartfuel_meta', val.toString()); }
                 }} />
               </div>
+            </div>
+            <div>
+              <label>Combustível</label>
+              <select 
+                className="big-input" 
+                value={settingsFuel} 
+                onChange={e => {
+                  setSettingsFuel(e.target.value);
+                  localStorage.setItem('smartfuel_fuel', e.target.value);
+                }}
+              >
+                <option value="Gasolina">Gasolina</option>
+                <option value="Etanol">Etanol</option>
+                <option value="GLP">GLP</option>
+                <option value="Flex">Flex</option>
+                <option value="Elétrico">Elétrico</option>
+              </select>
             </div>
             <p className="text-sm text-center opacity-70 italic uppercase font-bold text-cyan-500 mt-2">Salvo automaticamente</p>
             
