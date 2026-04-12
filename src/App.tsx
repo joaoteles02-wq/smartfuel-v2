@@ -180,10 +180,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex justify-center p-4">
+    <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V27</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V28</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -194,7 +194,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="w-full max-w-sm h-full flex flex-col pt-2">
+      <div className="w-full max-w-sm flex flex-col pt-2">
         <header className="mb-4 px-2">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-3xl font-black italic tracking-tighter uppercase main-title">Smart Fuel</h1>
@@ -276,7 +276,7 @@ export default function App() {
                 <div className="flex justify-between items-center mb-2">
                   <div>
                     <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
-                    <p className="text-base font-bold opacity-80 main-title">{new Date(l[1]).toLocaleDateString()}</p>
+                    <p className="text-sm opacity-60 main-title">{new Date(l[1]).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
                     <p className={`text-lg font-bold ${parseFloat(l[12]) < metaVal ? 'text-danger' : 'text-black'}`}>
@@ -284,15 +284,11 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-base font-black opacity-80 uppercase main-title mt-2 border-t border-white/10 pt-2">
-                  <div>
-                    <p>Odo: <span className="text-lg">{l[3]} KM</span></p>
-                    <p>Litros: <span className="text-lg">{l[8]} L</span></p>
-                  </div>
-                  <div className="text-right">
-                    <p>Preço: <span className="text-lg">R$ {parseFloat(l[11] || 0).toFixed(2)}</span></p>
-                    <p>Comb.: <span className="text-lg">{settingsFuel}</span></p>
-                  </div>
+                <div className="flex justify-between items-center text-sm font-black opacity-50 uppercase main-title mt-1 border-t border-white/10 pt-2">
+                  <span>R$ {parseFloat(l[11] || 0).toFixed(2)}</span>
+                  <span>{settingsFuel}</span>
+                  <span>{l[3]} KM</span>
+                  <span>{l[8]} L</span>
                 </div>
               </div>
             ))}
