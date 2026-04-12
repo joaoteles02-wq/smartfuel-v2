@@ -80,8 +80,12 @@ export default function App() {
       }
 
       const d = await r.json();
-      // Filter out rows without a valid date and odometer reading
-      const logs = (d.logs || d).filter((l: any) => l[1] && l[3]);
+      
+      const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
+      const deletedArr = deletedStr ? JSON.parse(deletedStr) : [];
+
+      // Filter out rows without a valid date and odometer reading, and filter out locally deleted logs
+      const logs = (d.logs || d).filter((l: any) => l[1] && l[3] && !deletedArr.includes(l[0]));
       setAllLogs(logs);
 
       let currentCar = carOverride || activeCar;
@@ -218,23 +222,22 @@ export default function App() {
 
   const confirmDelete = async (id: any) => {
     setLogToDelete(null);
-    setBooting(true);
-    try {
-      await fetch(URL, { 
-        method: 'POST', 
-        body: JSON.stringify({ action: 'delete', id: id }) 
-      });
-    } catch (e) {
-      console.error(e);
+    
+    const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
+    const deletedArr = deletedStr ? JSON.parse(deletedStr) : [];
+    if (!deletedArr.includes(id)) {
+      deletedArr.push(id);
+      localStorage.setItem('smartfuel_deleted_logs', JSON.stringify(deletedArr));
     }
-    sync();
+    
+    setAllLogs(prev => prev.filter(l => l[0] !== id));
   };
 
   return (
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V34</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V36</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -329,18 +332,16 @@ export default function App() {
 
               return (
                 <div key={i} className="panel-sport p-4 flex flex-col mb-3 border-none bg-zinc-900/10">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
-                        <button onClick={() => setLogToDelete(l)} className="p-1 text-red-500/50 hover:text-red-500">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-lg font-black uppercase italic main-title">{l[9] || 'Posto'}</p>
                       <p className="text-sm opacity-60 main-title">{formatDate(l[1])}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold">
+                    <div className="text-right flex flex-col items-end">
+                      <button onClick={() => setLogToDelete(l)} className="mb-1 text-[var(--text)] opacity-60 hover:opacity-100 hover:text-red-500 transition-colors">
+                        <Trash2 size={18} />
+                      </button>
+                      <p className="text-lg font-bold leading-none">
                         <span className={isDanger ? 'text-danger' : 'text-[var(--text)]'}>
                           {kmLDisplay}
                         </span>
