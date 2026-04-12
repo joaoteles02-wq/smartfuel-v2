@@ -86,11 +86,10 @@ export default function App() {
       const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
       const deletedArr = deletedStr ? JSON.parse(deletedStr) : [];
 
-      // Filter out rows without a valid date and odometer reading, and filter out locally deleted logs
+      // Filter out rows without a valid date, and filter out locally deleted logs
       const logs = (d.logs || d).filter((l: any) => 
-        l[1] != null && l[1] !== "" && 
-        l[3] != null && l[3] !== "" && 
-        !deletedArr.includes(l[0])
+        l[1] != null && String(l[1]).trim() !== "" && 
+        (!l[0] || !deletedArr.includes(l[0]))
       );
       setAllLogs(logs);
 
@@ -176,7 +175,13 @@ export default function App() {
     ? (parseFloat(modalTot) / parseFloat(modalLit)).toFixed(2)
     : '0.00';
 
-  const carLogs = useMemo(() => allLogs.filter(l => l[2] === activeCar), [allLogs, activeCar]);
+  const carLogs = useMemo(() => {
+    return allLogs.filter(l => {
+      const logCar = String(l[2] || '').trim().toLowerCase();
+      const actCar = String(activeCar || '').trim().toLowerCase();
+      return logCar === actCar;
+    });
+  }, [allLogs, activeCar]);
   const chartData = useMemo(() => {
     return carLogs.slice(-8).map(l => {
       let dateLabel = '';
@@ -243,7 +248,7 @@ export default function App() {
     <div className="flex justify-center p-4 h-screen overflow-y-auto w-full pb-32">
       {booting && (
         <div className="fixed inset-0 bg-black z-[9000] flex flex-col items-center justify-center text-center">
-          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V38</div>
+          <div className="digital-glow text-2xl animate-pulse uppercase">Smart Fuel V39</div>
           <p className="text-gray-600 mt-4 text-[10px] uppercase font-bold tracking-widest">Sincronizando Sistemas...</p>
         </div>
       )}
@@ -452,6 +457,14 @@ export default function App() {
               <label>Adicionar Novo Veículo</label>
               <input type="text" className="big-input mb-3" placeholder="Modelo" value={newCarName} onChange={e => setNewCarName(e.target.value)} />
               <button onClick={saveNewCar} className="w-full panel-sport p-4 rounded-2xl font-black uppercase text-cyan-500 main-title">Sincronizar Novo Veículo</button>
+            </div>
+
+            <div className="mt-8 p-4 bg-black/20 rounded-xl border border-white/5">
+              <p className="text-xs opacity-50 font-mono">
+                Diagnóstico de Dados:<br/>
+                Total de registros na planilha: {allLogs.length}<br/>
+                Registros do carro atual ({activeCar}): {carLogs.length}
+              </p>
             </div>
           </div>
         </div>
