@@ -62,6 +62,10 @@ export default function App() {
   const [settingsMeta, setSettingsMeta] = useState('');
   const [settingsFuel, setSettingsFuel] = useState('Gasolina');
   const [newCarName, setNewCarName] = useState('');
+  const [addedCars, setAddedCars] = useState<string[]>(() => {
+    const saved = localStorage.getItem('smartfuel_added_cars');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [logToDelete, setLogToDelete] = useState<any>(null);
 
   const sync = async (carOverride?: string) => {
@@ -217,8 +221,9 @@ export default function App() {
   const availableCars = useMemo(() => {
     const cars = new Set(allLogs.map(l => l[2]));
     cars.add(activeCar);
-    return Array.from(cars);
-  }, [allLogs, activeCar]);
+    addedCars.forEach(c => cars.add(c));
+    return Array.from(cars).filter(Boolean);
+  }, [allLogs, activeCar, addedCars]);
 
   const saveData = async () => {
     const p = {
@@ -242,8 +247,16 @@ export default function App() {
   };
 
   const saveNewCar = () => {
-    alert("Função de novo veículo sincronizada com planilha.");
-    sync();
+    const car = newCarName.trim();
+    if (car) {
+      const newAdded = [...addedCars, car];
+      setAddedCars(newAdded);
+      localStorage.setItem('smartfuel_added_cars', JSON.stringify(newAdded));
+      setActiveCar(car);
+      localStorage.setItem('smartfuel_active_car', car);
+      setNewCarName('');
+      alert("Veículo adicionado!");
+    }
   };
 
   const confirmDelete = async (id: any) => {
@@ -322,7 +335,7 @@ export default function App() {
                 <path fill="none" stroke="rgba(128,128,128,0.2)" strokeWidth="12" d="M 20 70 A 50 50 0 1 1 120 70" />
                 <path className="gauge-fill" strokeDashoffset={tankOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
               </svg>
-              <div className="mt-[-40px] font-black italic text-2xl">{isElectric ? Math.max(0, ((tankCap - spent) / tankCap) * 100).toFixed(1) + '%' : remaining.toFixed(1)}</div>
+              <div className="mt-[-40px] font-black italic text-2xl">{isElectric ? Math.max(0, ((tankCap - spent) / tankCap) * 100).toFixed(0) + '%' : remaining.toFixed(1)}</div>
             </div>
           </div>
 
@@ -496,7 +509,7 @@ export default function App() {
             <div className="pt-4 mt-4 border-t border-white/10">
               <label>Adicionar Novo Veículo</label>
               <input type="text" className="big-input mb-3" placeholder="Modelo" value={newCarName} onChange={e => setNewCarName(e.target.value)} />
-              <button onClick={saveNewCar} className="w-full panel-sport p-4 rounded-2xl font-black uppercase text-cyan-500 main-title">Sincronizar Novo Veículo</button>
+              <button onClick={saveNewCar} className="w-full panel-sport p-4 rounded-2xl font-black uppercase text-cyan-500 main-title">Adicionar Veículo</button>
             </div>
 
             <div className="mt-8 p-4 bg-black/20 rounded-xl border border-white/5">
