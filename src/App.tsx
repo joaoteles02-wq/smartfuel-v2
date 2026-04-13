@@ -96,18 +96,15 @@ export default function App() {
       const deletedArr = deletedStr ? JSON.parse(deletedStr).map(String) : [];
 
       // Filter out rows without a valid date, and filter out locally deleted logs
-      const logs = (d.logs || d).filter((l: any) => 
-        l[1] != null && String(l[1]).trim() !== "" && 
-        (!l[0] || !deletedArr.includes(String(l[0])))
-      );
+      const logs = (d.logs || d).filter((l: any) => {
+        if (l[1] == null || String(l[1]).trim() === "") return false;
+        const id = l[0] ? String(l[0]) : String(l[1]);
+        return !deletedArr.includes(id);
+      });
       setAllLogs(logs);
 
       let currentCar = carOverride || activeCar;
       const localCar = localStorage.getItem('smartfuel_active_car');
-      const localMeta = localStorage.getItem('smartfuel_meta');
-      const localTank = localStorage.getItem('smartfuel_tank');
-      const localFuel = localStorage.getItem('smartfuel_fuel');
-      const localOil = localStorage.getItem('smartfuel_oil');
       
       if (carOverride) {
         currentCar = carOverride;
@@ -116,6 +113,15 @@ export default function App() {
       } else if (d.config && d.config.active_car) {
         currentCar = d.config.active_car;
       }
+
+      let localMeta = localStorage.getItem(`smartfuel_meta_${currentCar}`);
+      if (!localMeta) localMeta = localStorage.getItem('smartfuel_meta');
+      
+      let localTank = localStorage.getItem(`smartfuel_tank_${currentCar}`);
+      if (!localTank) localTank = localStorage.getItem('smartfuel_tank');
+
+      const localFuel = localStorage.getItem(`smartfuel_fuel_${currentCar}`) || localStorage.getItem('smartfuel_fuel');
+      const localOil = localStorage.getItem(`smartfuel_oil_${currentCar}`) || localStorage.getItem('smartfuel_oil');
 
       let currentMeta = localMeta ? parseFloat(localMeta) : (d.config ? parseFloat(d.config.meta) : 8.0);
       let currentTank = localTank ? parseFloat(localTank) : (d.config ? parseFloat(d.config.tank_capacity) : 53);
@@ -483,7 +489,11 @@ export default function App() {
                 <input type="number" inputMode="decimal" className="big-input" value={settingsTank} onChange={e => {
                   setSettingsTank(e.target.value);
                   const val = parseFloat(e.target.value.replace(',', '.'));
-                  if (!isNaN(val)) { setTankCap(val); localStorage.setItem('smartfuel_tank', val.toString()); }
+                  if (!isNaN(val)) { 
+                    setTankCap(val); 
+                    localStorage.setItem(`smartfuel_tank_${activeCar}`, val.toString()); 
+                    localStorage.setItem('smartfuel_tank', val.toString()); // Keep global as fallback
+                  }
                 }} />
               </div>
               <div>
@@ -491,7 +501,11 @@ export default function App() {
                 <input type="number" inputMode="decimal" className="big-input" value={settingsMeta} onChange={e => {
                   setSettingsMeta(e.target.value);
                   const val = parseFloat(e.target.value.replace(',', '.'));
-                  if (!isNaN(val)) { setMetaVal(val); localStorage.setItem('smartfuel_meta', val.toString()); }
+                  if (!isNaN(val)) { 
+                    setMetaVal(val); 
+                    localStorage.setItem(`smartfuel_meta_${activeCar}`, val.toString()); 
+                    localStorage.setItem('smartfuel_meta', val.toString()); // Keep global as fallback
+                  }
                 }} />
               </div>
             </div>
@@ -499,6 +513,7 @@ export default function App() {
               <label>Troca Óleo (Km)</label>
               <input type="number" inputMode="decimal" className="big-input" value={settingsOil} onChange={e => {
                 setSettingsOil(e.target.value);
+                localStorage.setItem(`smartfuel_oil_${activeCar}`, e.target.value);
                 localStorage.setItem('smartfuel_oil', e.target.value);
               }} />
             </div>
@@ -509,6 +524,7 @@ export default function App() {
                 value={settingsFuel} 
                 onChange={e => {
                   setSettingsFuel(e.target.value);
+                  localStorage.setItem(`smartfuel_fuel_${activeCar}`, e.target.value);
                   localStorage.setItem('smartfuel_fuel', e.target.value);
                 }}
               >
@@ -639,7 +655,17 @@ export default function App() {
               </button>
               <button 
                 className="flex-1 py-3 rounded-xl bg-red-600 font-bold text-white"
-                onClick={() => confirmDelete(logToDelete[0])}
+                onClick={() => {
+                  const id = logToDelete[0] ? String(logToDelete[0]) : String(logToDelete[1]);
+                  const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
+                  const deletedArr = deletedStr ? JSON.parse(deletedStr).map(String) : [];
+                  if (!deletedArr.includes(id)) {
+                    deletedArr.push(id);
+                    localStorage.setItem('smartfuel_deleted_logs', JSON.stringify(deletedArr));
+                  }
+                  setLogToDelete(null);
+                  sync();
+                }}
               >
                 Excluir
               </button>
