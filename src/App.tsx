@@ -172,7 +172,6 @@ export default function App() {
   const showOilAlert = oilTarget > 0 && currentOdo >= (oilTarget - 100);
 
   const consOffset = 188.5 - (188.5 * Math.min(displayKmL / 20, 1));
-  const avgConsOffset = 188.5 - (188.5 * Math.min(avgKmL / 20, 1));
   const tankOffset = 188.5 - (188.5 * (remaining / tankCap));
   const spentOffset = 188.5 - (188.5 * (spent / tankCap));
 
@@ -193,6 +192,8 @@ export default function App() {
     if (validKmLs.length === 0) return 0;
     return validKmLs.reduce((a, b) => a + b, 0) / validKmLs.length;
   }, [carLogs]);
+
+  const avgConsOffset = 188.5 - (188.5 * Math.min(avgKmL / 20, 1));
 
   const chartData = useMemo(() => {
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
