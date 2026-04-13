@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANdYyg2a8jYZdB1_O3BwslsRP4AmGjdBgwsfNxpYTkHtg/exec";
@@ -172,6 +172,7 @@ export default function App() {
   const showOilAlert = oilTarget > 0 && currentOdo >= (oilTarget - 100);
 
   const consOffset = 188.5 - (188.5 * Math.min(displayKmL / 20, 1));
+  const avgConsOffset = 188.5 - (188.5 * Math.min(avgKmL / 20, 1));
   const tankOffset = 188.5 - (188.5 * (remaining / tankCap));
   const spentOffset = 188.5 - (188.5 * (spent / tankCap));
 
@@ -186,6 +187,13 @@ export default function App() {
       return logCar === actCar;
     });
   }, [allLogs, activeCar]);
+
+  const avgKmL = useMemo(() => {
+    const validKmLs = carLogs.map(l => parseFloat(String(l[12]).replace(',', '.'))).filter(v => !isNaN(v) && v > 0);
+    if (validKmLs.length === 0) return 0;
+    return validKmLs.reduce((a, b) => a + b, 0) / validKmLs.length;
+  }, [carLogs]);
+
   const chartData = useMemo(() => {
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     return carLogs.slice(-8).map(l => {
@@ -339,14 +347,14 @@ export default function App() {
               <span className="text-4xl font-black italic tracking-tighter main-title">{trip.toFixed(0)}</span>
             </div>
             <div className="panel-sport p-4 text-center">
-              <p className="text-[10px] font-black opacity-40 uppercase mb-3 main-title">{isElectric ? 'Consumo (Km/kWh)' : 'Consumo (Km/L)'}</p>
+              <p className="text-[10px] font-black opacity-40 uppercase mb-3 main-title">{isElectric ? 'Consumo médio (Km/kWh)' : 'Consumo médio (Km/L)'}</p>
               <svg className="w-full h-16" viewBox="0 0 140 80">
                 <path fill="none" stroke="rgba(128,128,128,0.2)" strokeWidth="10" d="M 20 70 A 50 50 0 1 1 120 70" />
-                <path className="gauge-fill" strokeDashoffset={consOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
+                <path className="gauge-fill" strokeDashoffset={avgConsOffset} d="M 20 70 A 50 50 0 1 1 120 70" />
               </svg>
               <div className="mt-[-35px] font-black italic text-2xl flex flex-col items-center">
-                <span className={lastKmL < metaVal ? 'text-danger' : 'text-cyan-400'}>{lastKmL > 0 ? lastKmL.toFixed(2) : "--"}</span>
-                <span className="text-[9px] text-gray-400 font-normal mt-1">{carLogs.length > 0 ? formatDate(carLogs[carLogs.length - 1][1]) : '--/--/----'}</span>
+                <span className={avgKmL < metaVal ? 'text-danger' : 'text-cyan-400'}>{avgKmL > 0 ? avgKmL.toFixed(2) : "--"}</span>
+                <span className="text-[9px] text-gray-400 font-normal mt-1">Média Geral</span>
               </div>
             </div>
           </div>
@@ -403,7 +411,8 @@ export default function App() {
               <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888', fontSize: 10 }} />
                 <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 10 }} label={{ value: isElectric ? 'Km/kWh' : 'Km/L', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 10, offset: 15 }} />
-                <Line type="monotone" dataKey="kmL" stroke="#1e40af" strokeWidth={3} dot={{ r: 4, fill: '#1e40af' }} activeDot={{ r: 6, fill: '#1e40af' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '12px' }} itemStyle={{ color: '#06b6d4' }} />
+                <Line type="monotone" dataKey="kmL" stroke="#1e40af" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#1e40af' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -414,7 +423,8 @@ export default function App() {
               <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888', fontSize: 10 }} />
                 <YAxis stroke="#888" tick={{ fill: '#888', fontSize: 10 }} label={{ value: 'Unit (R$)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 10, offset: 15 }} />
-                <Line type="monotone" dataKey="unitPrice" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6, fill: '#10b981' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '12px' }} itemStyle={{ color: '#10b981' }} />
+                <Line type="monotone" dataKey="unitPrice" stroke="#10b981" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#10b981' }} style={{ filter: 'drop-shadow(0px 4px 5px rgba(0,0,0,0.5))' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -474,7 +484,8 @@ export default function App() {
               >
                 <option value="Gasolina">Gasolina</option>
                 <option value="Etanol">Etanol</option>
-                <option value="GLP">GLP</option>
+                <option value="GNV">GNV</option>
+                <option value="Diesel">Diesel</option>
                 <option value="Flex">Flex</option>
                 <option value="Elétrico">Elétrico</option>
               </select>
