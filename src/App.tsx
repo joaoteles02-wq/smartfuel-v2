@@ -66,6 +66,11 @@ export default function App() {
     const saved = localStorage.getItem('smartfuel_added_cars');
     return saved ? JSON.parse(saved) : [];
   });
+  const [hiddenCars, setHiddenCars] = useState<string[]>(() => {
+    const saved = localStorage.getItem('smartfuel_hidden_cars');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [carToDelete, setCarToDelete] = useState<string | null>(null);
   const [logToDelete, setLogToDelete] = useState<any>(null);
 
   const sync = async (carOverride?: string) => {
@@ -222,8 +227,10 @@ export default function App() {
     const cars = new Set(allLogs.map(l => l[2]));
     cars.add(activeCar);
     addedCars.forEach(c => cars.add(c));
+    hiddenCars.forEach(c => cars.delete(c));
+    if (cars.size === 0) cars.add("Meu Carro");
     return Array.from(cars).filter(Boolean);
-  }, [allLogs, activeCar, addedCars]);
+  }, [allLogs, activeCar, addedCars, hiddenCars]);
 
   const saveData = async () => {
     const p = {
@@ -255,7 +262,6 @@ export default function App() {
       setActiveCar(car);
       localStorage.setItem('smartfuel_active_car', car);
       setNewCarName('');
-      alert("Veículo adicionado!");
     }
   };
 
@@ -448,19 +454,29 @@ export default function App() {
           <div className="panel-sport p-5 space-y-4">
             <h3 className="text-md font-black uppercase text-cyan-500 border-b border-white/5 pb-2 main-title">Configurações</h3>
             <label>Selecionar Carro</label>
-            <select 
-              className="big-input" 
-              value={activeCar} 
-              onChange={(e) => { 
-                const newCar = e.target.value;
-                setActiveCar(newCar); 
-                localStorage.setItem('smartfuel_active_car', newCar);
-                setBooting(true); 
-                sync(newCar); 
-              }}
-            >
-              {availableCars.map(car => <option key={car} value={car}>{car}</option>)}
-            </select>
+            <div className="flex gap-2 items-center">
+              <select 
+                className="big-input flex-1" 
+                value={activeCar} 
+                onChange={(e) => { 
+                  const newCar = e.target.value;
+                  setActiveCar(newCar); 
+                  localStorage.setItem('smartfuel_active_car', newCar);
+                  setBooting(true); 
+                  sync(newCar); 
+                }}
+              >
+                {availableCars.map(car => <option key={car} value={car}>{car}</option>)}
+              </select>
+              {availableCars.length > 1 && (
+                <button 
+                  onClick={() => setCarToDelete(activeCar)} 
+                  className="p-4 panel-sport text-danger rounded-xl flex items-center justify-center"
+                >
+                  <Trash2 size={24} />
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label>{isElectric ? 'Bateria (kWh)' : 'Tanque (L)'}</label>
@@ -626,6 +642,47 @@ export default function App() {
                 onClick={() => confirmDelete(logToDelete[0])}
               >
                 Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {carToDelete && (
+        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-zinc-900 p-6 rounded-2xl border border-white/10 w-full max-w-sm">
+            <h3 className="text-xl font-black text-red-500 mb-4 uppercase">Remover Veículo?</h3>
+            <p className="text-sm opacity-80 mb-6">
+              Tem certeza que deseja remover o veículo <strong>{carToDelete}</strong> da lista?
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setCarToDelete(null)}
+                className="flex-1 py-3 rounded-xl bg-zinc-800 font-bold"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  const newAdded = addedCars.filter(c => c !== carToDelete);
+                  setAddedCars(newAdded);
+                  localStorage.setItem('smartfuel_added_cars', JSON.stringify(newAdded));
+                  
+                  const newHidden = [...hiddenCars, carToDelete];
+                  setHiddenCars(newHidden);
+                  localStorage.setItem('smartfuel_hidden_cars', JSON.stringify(newHidden));
+                  
+                  setCarToDelete(null);
+                  
+                  const remaining = availableCars.filter(c => c !== carToDelete);
+                  const nextCar = remaining.length > 0 ? remaining[0] : "Meu Carro";
+                  setActiveCar(nextCar);
+                  localStorage.setItem('smartfuel_active_car', nextCar);
+                  sync(nextCar);
+                }}
+                className="flex-1 py-3 rounded-xl bg-red-600 font-bold text-white"
+              >
+                Remover
               </button>
             </div>
           </div>
