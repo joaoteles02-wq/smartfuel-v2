@@ -219,9 +219,17 @@ body.light-mode label {
     font-weight: bold; 
 }
 
+.big-input option {
+    color: #000;
+}
+
 body.light-mode .big-input {
     background: rgba(255, 255, 255, 0.6);
     border-color: rgba(148, 163, 184, 0.4);
+    color: #000;
+}
+
+body.light-mode .big-input option {
     color: #000;
 }
 

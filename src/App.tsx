@@ -388,7 +388,7 @@ export default function App() {
                           {kmLDisplay}
                         </span>
                         <span className={isDanger ? 'text-danger' : 'text-[var(--text)]'}>
-                          {' '}Km/L
+                          {isElectric ? ' Km/kWh' : ' Km/L'}
                         </span>
                       </p>
                     </div>
@@ -397,7 +397,7 @@ export default function App() {
                     <span>{l[11] ? `R$ ${String(l[11]).replace('.', ',')}` : '---'}</span>
                     <span>{settingsFuel}</span>
                     <span>{l[3]} KM</span>
-                    <span>{l[8]} L</span>
+                    <span>{l[8]} {isElectric ? 'kWh' : 'L'}</span>
                   </div>
                 </div>
               );
