@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw } from 'lucide-react';
 
-const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANdYyg2a8jYZdB1_O3BwslsRP4AmGjdBgwsfNxpYTkHtg/exec";
+const URL = "https://script.google.com/macros/s/AKfycbwpzaN3dKKVMOuCt7NCg4-pI5o76Gl586zjvw1yQIDsi1XxIL8xacxvvPEidUycuA0/exec";
 
 const parseBrNumber = (val: any) => {
   if (val == null || val === '') return 0;
@@ -63,6 +63,7 @@ export default function App() {
   // Last log values
   const [lastOdoVal, setLastOdoVal] = useState(0);
   const [lastLitros, setLastLitros] = useState(0);
+  const [lastSpentFuel, setLastSpentFuel] = useState(0);
   const [lastTankType, setLastTankType] = useState("Full Tank - refresh");
   const [lastKmL, setLastKmL] = useState(8.0);
   const [prevKmL, setPrevKmL] = useState(8.0);
@@ -168,9 +169,13 @@ export default function App() {
       const prev = carLogs[carLogs.length - 2] || last;
 
       const newLastOdo = parseBrNumber(last[3]) || 0;
+      const prevTrip = newLastOdo - (parseBrNumber(prev[3]) || 0);
+      const prevSpentCalc = prevTrip / (parseBrNumber(prev[12]) || currentMeta);
+      
       setLastOdoVal(newLastOdo);
       setCurrentOdo(newLastOdo);
       setLastLitros(parseBrNumber(last[8]) || 0);
+      setLastSpentFuel(parseBrNumber(last[6]) || prevSpentCalc || 0);
       setLastTankType(last[13] || "Full Tank - refresh");
       setLastKmL(parseBrNumber(last[12]) || currentMeta);
       setPrevKmL(parseBrNumber(prev[12]) || currentMeta);
@@ -235,7 +240,11 @@ export default function App() {
   // Calcula o gasto com base na distância percorrida e na média de consumo
   const spent = displayKmL > 0 ? (trip / displayKmL) : 0;
   
-  const remaining = Math.max(0, tankCap - spent);
+  let baseTank = tankCap;
+  if (!lastTankType.includes("Full")) {
+    baseTank = Math.min(tankCap, tankCap - lastSpentFuel + lastLitros);
+  }
+  const remaining = Math.max(0, baseTank - spent);
   
   const safeOilTarget = parseBrNumber(oilTarget);
   const safeCurrentOdo = parseBrNumber(currentOdo);
