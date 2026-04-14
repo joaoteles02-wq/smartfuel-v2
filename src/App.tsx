@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw } from 'lucide-react';
 
-const URL = "https://script.google.com/macros/s/AKfycbwpzaN3dKKVMOuCt7NCg4-pI5o76Gl586zjvw1yQIDsi1XxIL8xacxvvPEidUycuA0/exec";
+const URL = "https://script.google.com/macros/s/AKfycbzI0sRm9dOJWtqD390cJi8hjFoJuo3ZNgjDKMPbkSb8K5vxnxL3sZbzH5Iwkz4gqhF1Qg/exec";
 
 const parseBrNumber = (val: any) => {
   if (val == null || val === '') return 0;
@@ -295,12 +295,16 @@ export default function App() {
     const carLogs = allLogs.filter((l: any) => l[2] === activeCar).sort((a: any, b: any) => parseBrNumber(a[3]) - parseBrNumber(b[3]));
     const lastLog = carLogs[carLogs.length - 1];
     const lastOdometer = lastLog ? parseBrNumber(lastLog[3]) : 0;
+    const trip = Math.max(0, odoVal - lastOdometer);
+    const litersNum = parseBrNumber(modalLit);
+    const kmL = litersNum > 0 ? trip / litersNum : 0;
 
     const p = {
       carType: activeCar,
       odo: odoVal,
-      dist: parseBrNumber(settingsOil), // Apps Script usa params.dist para a coluna Q (Troca de Óleo)
-      liters: parseBrNumber(modalLit),
+      trip: trip,
+      kmL: kmL,
+      liters: litersNum,
       total: parseBrNumber(modalTot),
       station: modalSt,
       tankLevel: modalTank,
@@ -318,8 +322,9 @@ export default function App() {
         },
         body: JSON.stringify(p) 
       });
+      console.log("Save request sent (no-cors)");
     } catch (e) {
-      console.error(e);
+      console.error("Save error:", e);
     }
     
     // Give Google Sheets a moment to append the row before syncing
