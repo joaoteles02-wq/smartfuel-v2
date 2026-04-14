@@ -7,18 +7,23 @@ const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANd
 const parseBrNumber = (val: any) => {
   if (val == null || val === '') return 0;
   if (typeof val === 'number') return val;
-  const str = String(val);
-  // If it's a string with both dots and commas (e.g. "50.000,50"), remove dots and replace comma with dot
+  let str = String(val).trim();
+  
   if (str.includes(',') && str.includes('.')) {
     return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
   }
-  // If it only has a comma (e.g. "50,50"), replace it with a dot
-  if (str.includes(',')) {
+  
+  if (str.includes(',') && !str.includes('.')) {
     return parseFloat(str.replace(',', '.')) || 0;
   }
-  // If it only has a dot, it might be a standard decimal or a thousands separator.
-  // We assume standard decimal if there's only one dot and it's followed by 1 or 2 digits.
-  // But to be safe, if it's from an input type="number", it's a standard decimal.
+  
+  if (str.includes('.') && !str.includes(',')) {
+    if (/^-?\d{1,3}(\.\d{3})+$/.test(str)) {
+      return parseFloat(str.replace(/\./g, '')) || 0;
+    }
+    return parseFloat(str) || 0;
+  }
+  
   return parseFloat(str) || 0;
 };
 
@@ -417,7 +422,7 @@ export default function App() {
                   className="odo-input" 
                   style={{ textShadow: theme === 'dark' ? '0 0 10px var(--neon), 0 0 20px var(--neon)' : 'none', letterSpacing: '2px' }}
                   value={currentOdo} 
-                  onChange={(e) => setCurrentOdo(parseBrNumber(e.target.value))} 
+                  onChange={(e) => setCurrentOdo(e.target.value as any)} 
                 />
               </div>
             </div>
