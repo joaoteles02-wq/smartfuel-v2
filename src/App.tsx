@@ -402,6 +402,7 @@ export default function App() {
 
         {/* DASHBOARD (HOME) */}
         <div className={`tab-content space-y-4 ${activeTab === 'home' ? 'active' : 'hidden'}`}>
+          <h2 className="text-xl font-black uppercase italic text-center mb-2 main-title text-cyan-400">Simulator</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="panel-sport p-4 text-center">
               <p className="text-[10px] font-black opacity-40 uppercase mb-3 main-title">{isElectric ? 'Energia (kWh)' : 'Gasto (L)'}</p>
@@ -666,6 +667,9 @@ export default function App() {
               <div>
                 <label>Odômetro</label>
                 <input type="number" inputMode="decimal" className="big-input" value={modalOdo} onChange={e => setModalOdo(e.target.value)} />
+                <div className="text-right text-xs text-cyan-400 mt-1 font-bold">
+                  Km Percorrido: {Math.max(0, parseBrNumber(modalOdo) - lastOdoVal).toFixed(0)} km
+                </div>
               </div>
             </div>
             <div>
