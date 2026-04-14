@@ -295,18 +295,17 @@ export default function App() {
     const carLogs = allLogs.filter((l: any) => l[2] === activeCar).sort((a: any, b: any) => parseBrNumber(a[3]) - parseBrNumber(b[3]));
     const lastLog = carLogs[carLogs.length - 1];
     const lastOdometer = lastLog ? parseBrNumber(lastLog[3]) : 0;
-    const dist = Math.max(0, odoVal - lastOdometer);
 
     const p = {
       carType: activeCar,
-      odo: modalOdo,
-      dist: dist,
-      liters: modalLit,
-      total: modalTot,
+      odo: odoVal,
+      dist: parseBrNumber(settingsOil), // Apps Script usa params.dist para a coluna Q (Troca de Óleo)
+      liters: parseBrNumber(modalLit),
+      total: parseBrNumber(modalTot),
       station: modalSt,
       tankLevel: modalTank,
       date: modalDate,
-      oil: settingsOil
+      oil: parseBrNumber(settingsOil)
     };
     setIsModalOpen(false);
     setBooting(true);
