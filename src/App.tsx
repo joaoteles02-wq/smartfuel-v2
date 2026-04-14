@@ -4,6 +4,24 @@ import { Trash2, RefreshCw } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbx6gJ_4a1Dq9c9nzF2a8pOoqANdYyg2a8jYZdB1_O3BwslsRP4AmGjdBgwsfNxpYTkHtg/exec";
 
+const parseBrNumber = (val: any) => {
+  if (val == null || val === '') return 0;
+  if (typeof val === 'number') return val;
+  const str = String(val);
+  // If it's a string with both dots and commas (e.g. "50.000,50"), remove dots and replace comma with dot
+  if (str.includes(',') && str.includes('.')) {
+    return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+  }
+  // If it only has a comma (e.g. "50,50"), replace it with a dot
+  if (str.includes(',')) {
+    return parseFloat(str.replace(',', '.')) || 0;
+  }
+  // If it only has a dot, it might be a standard decimal or a thousands separator.
+  // We assume standard decimal if there's only one dot and it's followed by 1 or 2 digits.
+  // But to be safe, if it's from an input type="number", it's a standard decimal.
+  return parseFloat(str) || 0;
+};
+
 const formatDate = (dateStr: any) => {
   if (!dateStr) return '';
   if (typeof dateStr === 'number') {
@@ -60,7 +78,7 @@ export default function App() {
   const [settingsOil, setSettingsOil] = useState('');
   const [settingsTank, setSettingsTank] = useState('');
   const [settingsMeta, setSettingsMeta] = useState('');
-  const [settingsFuel, setSettingsFuel] = useState('Gasolina');
+  const [settingsFuel, setSettingsFuel] = useState('Gas.');
   const [newCarName, setNewCarName] = useState('');
   const [addedCars, setAddedCars] = useState<string[]>(() => {
     const saved = localStorage.getItem('smartfuel_added_cars');
@@ -125,7 +143,8 @@ export default function App() {
 
       let currentMeta = localMeta ? parseFloat(localMeta) : (d.config ? parseFloat(d.config.meta) : 8.0);
       let currentTank = localTank ? parseFloat(localTank) : (d.config ? parseFloat(d.config.tank_capacity) : 53);
-      let currentFuel = localFuel ? localFuel : 'Gasolina';
+      let currentFuel = localFuel ? localFuel : 'Gas.';
+      if (currentFuel === 'Gasolina') currentFuel = 'Gas.';
 
       setActiveCar(currentCar);
       setMetaVal(currentMeta);
@@ -135,7 +154,7 @@ export default function App() {
       setSettingsFuel(currentFuel);
       setSettingsOil(localOil || '');
 
-      const carLogs = logs.filter((l: any) => l[2] === currentCar);
+      const carLogs = logs.filter((l: any) => l[2] === currentCar).sort((a: any, b: any) => parseBrNumber(a[3]) - parseBrNumber(b[3]));
       // Fallback array matches the new column structure:
       // 0:ID, 1:Date, 2:CarType, 3:Odo, 4:Dist, 5:City/Road, 6:SpentFuel, 7:CurrentTank, 
       // 8:FuelSupplied, 9:GasStation, 10:Total, 11:UnitValue, 12:Consumption, 13:TankLevel, 
@@ -143,14 +162,14 @@ export default function App() {
       const last = carLogs[carLogs.length - 1] || [0, new Date().toISOString(), currentCar, 0, 0, '', 0, 0, 0, 'Posto', 0, 0, currentMeta, 'Full Tank - refresh', 0, '', 0];
       const prev = carLogs[carLogs.length - 2] || last;
 
-      const newLastOdo = parseFloat(last[3]) || 0;
+      const newLastOdo = parseBrNumber(last[3]) || 0;
       setLastOdoVal(newLastOdo);
       setCurrentOdo(newLastOdo);
-      setLastLitros(parseFloat(last[8]) || 0);
+      setLastLitros(parseBrNumber(last[8]) || 0);
       setLastTankType(last[13] || "Full Tank - refresh");
-      setLastKmL(parseFloat(last[12]) || currentMeta);
-      setPrevKmL(parseFloat(prev[12]) || currentMeta);
-      setOilTarget(parseFloat(last[16]) || 0); // Atualizado para coluna Q (índice 16)
+      setLastKmL(parseBrNumber(last[12]) || currentMeta);
+      setPrevKmL(parseBrNumber(prev[12]) || currentMeta);
+      setOilTarget(parseBrNumber(last[16]) || 0); // Atualizado para coluna Q (índice 16)
 
     } catch (e: any) {
       console.error(e);
@@ -162,6 +181,18 @@ export default function App() {
 
   useEffect(() => {
     sync();
+    
+    // Prevent number inputs from changing value on scroll
+    const handleWheel = (e: WheelEvent) => {
+      if (document.activeElement?.tagName === 'INPUT' && (document.activeElement as HTMLInputElement).type === 'number') {
+        (document.activeElement as HTMLElement).blur();
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+    };
   }, []);
 
   useEffect(() => {
@@ -174,26 +205,6 @@ export default function App() {
 
   const isElectric = settingsFuel === 'Elétrico';
 
-  // Derived calculations
-  const trip = Math.max(0, currentOdo - lastOdoVal);
-  
-  // Define qual média de consumo usar com base no último abastecimento
-  const displayKmL = lastTankType.includes("Full") ? lastKmL : prevKmL;
-
-  // Calcula o gasto com base na distância percorrida e na média de consumo
-  const spent = displayKmL > 0 ? (trip / displayKmL) : 0;
-  
-  const remaining = Math.max(0, tankCap - spent);
-  const showOilAlert = oilTarget > 0 && currentOdo >= (oilTarget - 100);
-
-  const consOffset = 188.5 - (188.5 * Math.min(displayKmL / 20, 1));
-  const tankOffset = 188.5 - (188.5 * (remaining / tankCap));
-  const spentOffset = 188.5 - (188.5 * (spent / tankCap));
-
-  const modalPrice = (parseFloat(modalTot) && parseFloat(modalLit))
-    ? (parseFloat(modalTot) / parseFloat(modalLit)).toFixed(2)
-    : '0.00';
-
   const carLogs = useMemo(() => {
     return allLogs.filter(l => {
       const logCar = String(l[2] || '').trim().toLowerCase();
@@ -203,12 +214,37 @@ export default function App() {
   }, [allLogs, activeCar]);
 
   const avgKmL = useMemo(() => {
-    const validKmLs = carLogs.map(l => parseFloat(String(l[12]).replace(',', '.'))).filter(v => !isNaN(v) && v > 0);
+    const validKmLs = carLogs.map(l => parseBrNumber(l[12])).filter(v => !isNaN(v) && v > 0);
     if (validKmLs.length === 0) return 0;
     return validKmLs.reduce((a, b) => a + b, 0) / validKmLs.length;
   }, [carLogs]);
 
   const avgConsOffset = 188.5 - (188.5 * Math.min(avgKmL / 20, 1));
+
+  // Derived calculations
+  const trip = Math.max(0, parseBrNumber(currentOdo) - lastOdoVal);
+  
+  // Define qual média de consumo usar com base no último abastecimento
+  const displayKmL = lastTankType.includes("Full") ? lastKmL : avgKmL;
+
+  // Calcula o gasto com base na distância percorrida e na média de consumo
+  const spent = displayKmL > 0 ? (trip / displayKmL) : 0;
+  
+  const remaining = Math.max(0, tankCap - spent);
+  
+  const safeOilTarget = parseBrNumber(oilTarget);
+  const safeCurrentOdo = parseBrNumber(currentOdo);
+  const distanceToOil = safeOilTarget - safeCurrentOdo;
+  // Show alert if we are within 100km of the target, or if we have passed it (but not by more than 10000km to avoid bugs)
+  const showOilAlert = safeOilTarget > 0 && safeCurrentOdo > 0 && distanceToOil <= 100 && distanceToOil >= -10000;
+
+  const consOffset = 188.5 - (188.5 * Math.min(displayKmL / 20, 1));
+  const tankOffset = 188.5 - (188.5 * (remaining / tankCap));
+  const spentOffset = 188.5 - (188.5 * (spent / tankCap));
+
+  const modalPrice = (parseBrNumber(modalTot) && parseBrNumber(modalLit))
+    ? (parseBrNumber(modalTot) / parseBrNumber(modalLit)).toFixed(2)
+    : '0.00';
 
   const chartData = useMemo(() => {
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -222,8 +258,8 @@ export default function App() {
       }
       return {
         date: dateLabel,
-        kmL: parseFloat(String(l[12]).replace(',', '.')) || 0,
-        unitPrice: parseFloat(String(l[11]).replace(',', '.')) || 0
+        kmL: parseBrNumber(l[12]),
+        unitPrice: parseBrNumber(l[11])
       };
     });
   }, [carLogs]);
@@ -239,24 +275,44 @@ export default function App() {
   }, [allLogs, activeCar, addedCars, hiddenCars]);
 
   const saveData = async () => {
+    const odoVal = parseBrNumber(modalOdo);
+    
+    // Calculate distance reliably from the last log
+    const carLogs = allLogs.filter((l: any) => l[2] === activeCar).sort((a: any, b: any) => parseBrNumber(a[3]) - parseBrNumber(b[3]));
+    const lastLog = carLogs[carLogs.length - 1];
+    const lastOdometer = lastLog ? parseBrNumber(lastLog[3]) : 0;
+    const dist = Math.max(0, odoVal - lastOdometer);
+
     const p = {
       carType: activeCar,
       odo: modalOdo,
-      dist: settingsOil,
+      dist: dist,
       liters: modalLit,
       total: modalTot,
       station: modalSt,
       tankLevel: modalTank,
-      date: modalDate
+      date: modalDate,
+      oil: settingsOil
     };
     setIsModalOpen(false);
     setBooting(true);
     try {
-      await fetch(URL, { method: 'POST', body: JSON.stringify(p) });
+      await fetch(URL, { 
+        method: 'POST', 
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(p) 
+      });
     } catch (e) {
       console.error(e);
     }
-    sync();
+    
+    // Give Google Sheets a moment to append the row before syncing
+    setTimeout(() => {
+      sync();
+    }, 3000);
   };
 
   const saveNewCar = () => {
@@ -361,7 +417,7 @@ export default function App() {
                   className="odo-input" 
                   style={{ textShadow: theme === 'dark' ? '0 0 10px var(--neon), 0 0 20px var(--neon)' : 'none', letterSpacing: '2px' }}
                   value={currentOdo} 
-                  onChange={(e) => setCurrentOdo(parseFloat(e.target.value) || 0)} 
+                  onChange={(e) => setCurrentOdo(parseBrNumber(e.target.value))} 
                 />
               </div>
             </div>
@@ -393,7 +449,7 @@ export default function App() {
           </div>
           <div className="space-y-3 pb-20">
             {carLogs.slice().reverse().map((l, i) => {
-              const kmLNum = parseFloat(String(l[12]).replace(',', '.'));
+              const kmLNum = parseBrNumber(l[12]);
               const isDanger = !isNaN(kmLNum) && kmLNum < metaVal;
               const kmLDisplay = !isNaN(kmLNum) ? kmLNum.toFixed(2).replace('.', ',') : String(l[12] || '---');
 
@@ -418,9 +474,10 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-sm font-black opacity-60 uppercase main-title mt-2 border-t border-white/10 pt-2">
+                  <div className="flex justify-between items-center text-xs font-black opacity-60 uppercase main-title mt-2 border-t border-white/10 pt-2">
                     <span>{l[11] ? `R$ ${String(l[11]).replace('.', ',')}` : '---'}</span>
                     <span>{settingsFuel}</span>
+                    <span>+{l[4]} KM</span>
                     <span>{l[3]} KM</span>
                     <span>{l[8]} {isElectric ? 'kWh' : 'L'}</span>
                   </div>
@@ -488,7 +545,7 @@ export default function App() {
                 <label>{isElectric ? 'Bateria (kWh)' : 'Tanque (L)'}</label>
                 <input type="number" inputMode="decimal" className="big-input" value={settingsTank} onChange={e => {
                   setSettingsTank(e.target.value);
-                  const val = parseFloat(e.target.value.replace(',', '.'));
+                  const val = parseBrNumber(e.target.value);
                   if (!isNaN(val)) { 
                     setTankCap(val); 
                     localStorage.setItem(`smartfuel_tank_${activeCar}`, val.toString()); 
@@ -500,7 +557,7 @@ export default function App() {
                 <label>{isElectric ? 'Meta Km/kWh' : 'Meta Km/L'}</label>
                 <input type="number" inputMode="decimal" className="big-input" value={settingsMeta} onChange={e => {
                   setSettingsMeta(e.target.value);
-                  const val = parseFloat(e.target.value.replace(',', '.'));
+                  const val = parseBrNumber(e.target.value);
                   if (!isNaN(val)) { 
                     setMetaVal(val); 
                     localStorage.setItem(`smartfuel_meta_${activeCar}`, val.toString()); 
@@ -528,7 +585,7 @@ export default function App() {
                   localStorage.setItem('smartfuel_fuel', e.target.value);
                 }}
               >
-                <option value="Gasolina">Gasolina</option>
+                <option value="Gas.">Gas.</option>
                 <option value="Etanol">Etanol</option>
                 <option value="GNV">GNV</option>
                 <option value="Diesel">Diesel</option>
@@ -568,6 +625,10 @@ export default function App() {
             onClick={() => { 
               setIsModalOpen(true); 
               setModalOdo(currentOdo.toString()); 
+              setModalLit('');
+              setModalTot('');
+              setModalSt('');
+              setModalTank('Full Tank - refresh');
             }} 
             className="bg-cyan-500 w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg nav-btn-plus cursor-pointer"
           >
@@ -627,9 +688,9 @@ export default function App() {
               <label>Total R$</label>
               <input type="number" inputMode="decimal" step="0.01" className="big-input" value={modalTot} onChange={e => setModalTot(e.target.value)} />
             </div>
-            <div className="lcd-display p-4 text-center bg-cyan-400">
-              <label className="text-black font-black uppercase">Preço Unitário</label>
-              <div className="text-3xl font-black text-black">R$ {modalPrice}</div>
+            <div className="lcd-display p-4 text-center">
+              <label className="text-[var(--text)] font-black uppercase">Preço Unitário</label>
+              <div className="text-3xl font-black text-[var(--text)]">R$ {modalPrice}</div>
             </div>
             <div className="flex gap-4 pt-4 pb-4">
               <button onClick={() => setIsModalOpen(false)} className="flex-1 font-black opacity-60 uppercase text-lg main-title">Sair</button>
