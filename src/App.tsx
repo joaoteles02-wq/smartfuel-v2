@@ -71,7 +71,7 @@ export default function App() {
   const [modalOdo, setModalOdo] = useState('');
   const [modalLit, setModalLit] = useState('');
   const [modalSt, setModalSt] = useState('');
-  const [modalTank, setModalTank] = useState('Full Tank - refresh');
+  const [modalTank, setModalTank] = useState('');
   const [modalTot, setModalTot] = useState('');
 
   // Settings inputs
@@ -628,7 +628,7 @@ export default function App() {
               setModalLit('');
               setModalTot('');
               setModalSt('');
-              setModalTank('Full Tank - refresh');
+              setModalTank('');
             }} 
             className="bg-cyan-500 w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg nav-btn-plus cursor-pointer"
           >
@@ -672,13 +672,13 @@ export default function App() {
               <div className="flex">
                 <button 
                   onClick={() => setModalTank('Full Tank - refresh')} 
-                  className={`segmented-btn btn-left main-title ${modalTank.includes('Full') ? 'btn-active' : ''}`}
+                  className={`segmented-btn btn-left main-title ${modalTank.includes('Full') ? '!bg-green-500/20 !text-green-400 !border-green-500/50' : ''}`}
                 >
                   Cheio
                 </button>
                 <button 
                   onClick={() => setModalTank('Parcial')} 
-                  className={`segmented-btn btn-right main-title ${!modalTank.includes('Full') ? 'btn-active' : ''}`}
+                  className={`segmented-btn btn-right main-title ${modalTank === 'Parcial' ? '!bg-green-500/20 !text-green-400 !border-green-500/50' : ''}`}
                 >
                   Parcial
                 </button>
@@ -686,15 +686,30 @@ export default function App() {
             </div>
             <div>
               <label>Total R$</label>
-              <input type="number" inputMode="decimal" step="0.01" className="big-input" value={modalTot} onChange={e => setModalTot(e.target.value)} />
+              <div className="relative">
+                <input 
+                  type="number" 
+                  inputMode="decimal" 
+                  step="0.01" 
+                  className={`big-input ${!modalTank ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                  value={modalTot} 
+                  onChange={e => setModalTot(e.target.value)} 
+                  disabled={!modalTank}
+                />
+                {!modalTank && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-xs text-red-400 bg-black/80 px-2 py-1 rounded font-bold">Selecione o nível do tanque</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="lcd-display p-4 text-center">
               <label className="text-[var(--text)] font-black uppercase">Preço Unitário</label>
               <div className="text-3xl font-black text-[var(--text)]">R$ {modalPrice}</div>
             </div>
             <div className="flex gap-4 pt-4 pb-4">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 font-black opacity-60 uppercase text-lg main-title">Sair</button>
-              <button onClick={saveData} className="flex-1 panel-sport p-4 rounded-2xl font-black uppercase text-xl main-title btn-save-text">Salvar</button>
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 panel-sport p-4 rounded-2xl font-black uppercase text-xl main-title !bg-amber-500/20 !border-amber-500/30 text-amber-500">Sair</button>
+              <button onClick={saveData} disabled={!modalTank} className={`flex-1 panel-sport p-4 rounded-2xl font-black uppercase text-xl main-title !bg-blue-500/20 !border-blue-500/30 text-blue-400 ${!modalTank ? 'opacity-50 cursor-not-allowed' : ''}`}>Salvar</button>
             </div>
           </div>
         </div>
