@@ -6,15 +6,16 @@
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
-  {
-    "src": "/app-icon-16.png?v=300",
-    "sizes": "1024x1024",
-    "type": "image/png"
-  },
-  {
-    "src": "/app-icon-16.png?v=300",
-    "sizes": "1024x1024",
-    "type": "image/png",
-    "purpose": "any maskable"
-  }
-]
+    {
+      "src": "/app-icon-16.png?v=2",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    },
+    {
+      "src": "/app-icon-16.png?v=2",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
