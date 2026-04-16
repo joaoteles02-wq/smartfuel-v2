@@ -1,20 +1,43 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#000000" />
+    
+    <!-- O COMBO PARA TELA CHEIA NO IPHONE -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SmartFuel" />
-    <link rel="apple-touch-icon" href="/app-icon-16.png?v=2" />
-    <link rel="icon" type="image/png" href="/app-icon-16.png?v=2" />
-    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+    
+    <!-- ÍCONES COM VERSÃO PARA LIMPAR CACHE -->
+    <link rel="apple-touch-icon" href="/app-icon-16.png?v=500" />
+    <link rel="icon" type="image/png" href="/app-icon-16.png?v=500" />
+    <link rel="manifest" href="/manifest.json?v=500" />
+
     <title>SmartFuel</title>
+
+    <!-- ESTILO PARA TRAVAR A TELA -->
+    <style>
+      html, body {
+        position: fixed;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  <!-- Atualizando para tela cheia --></body>
+  </body>
 </html>
-
