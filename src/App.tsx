@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw } from 'lucide-react';
 
-const URL = "https://script.google.com/macros/s/AKfycbzI0sRm9dOJWtqD390cJi8hjFoJuo3ZNgjDKMPbkSb8K5vxnxL3sZbzH5Iwkz4gqhF1Qg/exec";
+const URL = "https://script.google.com/macros/s/AKfycbwZKTr0tBtpnlShSIrqdZKwd3QDFAvpTPUcduZjc6deodnr_wAMumdw5LeHKGjxt7ZI3w/exec";
 
 const parseBrNumber = (val: any) => {
   if (val == null || val === '') return 0;
@@ -115,6 +115,10 @@ export default function App() {
       }
 
       const d = await r.json();
+      
+      if (d.error) {
+        throw new Error(d.error);
+      }
       
       const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
       const deletedArr = deletedStr ? JSON.parse(deletedStr).map(String) : [];
@@ -311,26 +315,64 @@ export default function App() {
       date: modalDate,
       oil: parseBrNumber(settingsOil)
     };
+    
+    // Optimistic UI Update
+    const newLog = [
+      new Date().getTime().toString(),
+      modalDate,
+      activeCar,
+      odoVal,
+      trip,
+      "",
+      0,
+      0,
+      litersNum,
+      modalSt,
+      parseBrNumber(modalTot),
+      litersNum > 0 ? parseBrNumber(modalTot) / litersNum : 0,
+      kmL,
+      modalTank,
+      0,
+      "",
+      parseBrNumber(settingsOil)
+    ];
+    setAllLogs(prev => [...prev, newLog]);
+    
     setIsModalOpen(false);
     setBooting(true);
+    
     try {
-      await fetch(URL, { 
-        method: 'POST', 
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-        body: JSON.stringify(p) 
-      });
-      console.log("Save request sent (no-cors)");
+      const payload = JSON.stringify(p);
+      
+      // Use sendBeacon for more reliable delivery on mobile browsers
+      if (navigator.sendBeacon) {
+        const success = navigator.sendBeacon(URL, payload);
+        console.log("Save request sent (sendBeacon):", success);
+        
+        // Fallback to fetch if sendBeacon fails (e.g. payload too large, though unlikely here)
+        if (!success) {
+          await fetch(URL, { 
+            method: 'POST', 
+            mode: 'no-cors',
+            body: payload 
+          });
+          console.log("Save request sent (fetch fallback)");
+        }
+      } else {
+        await fetch(URL, { 
+          method: 'POST', 
+          mode: 'no-cors',
+          body: payload 
+        });
+        console.log("Save request sent (fetch no-cors)");
+      }
     } catch (e) {
       console.error("Save error:", e);
     }
-    
-    // Give Google Sheets a moment to append the row before syncing
+
     setTimeout(() => {
       sync();
-    }, 3000);
+    }, 5000);
   };
 
   const saveNewCar = () => {
@@ -643,7 +685,7 @@ export default function App() {
           <div 
             onClick={() => { 
               setIsModalOpen(true); 
-              setModalOdo(currentOdo.toString()); 
+              setModalOdo(''); 
               setModalLit('');
               setModalTot('');
               setModalSt('');
@@ -678,7 +720,16 @@ export default function App() {
             </div>
             <div>
               <label>{isElectric ? 'Energia (kWh)' : 'Litros'}</label>
-              <input type="number" inputMode="decimal" step="0.01" className="big-input" value={modalLit} onChange={e => setModalLit(e.target.value)} />
+              <input 
+                type={!modalOdo ? "text" : "number"} 
+                inputMode="decimal" 
+                step="0.01" 
+                className={`big-input ${!modalOdo ? 'opacity-50 cursor-not-allowed placeholder:text-[13px] placeholder:font-black placeholder:uppercase placeholder:text-red-500' : ''}`} 
+                value={modalLit} 
+                onChange={e => setModalLit(e.target.value)} 
+                disabled={!modalOdo}
+                placeholder={!modalOdo ? "Preencha o odômetro primeiro!" : ""}
+              />
             </div>
             <div>
               <label>{isElectric ? 'Local de Recarga' : 'Posto'}</label>
@@ -710,19 +761,15 @@ export default function App() {
               <label>Total R$</label>
               <div className="relative">
                 <input 
-                  type="number" 
+                  type={!modalTank ? "text" : "number"} 
                   inputMode="decimal" 
                   step="0.01" 
-                  className={`big-input ${!modalTank ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                  className={`big-input ${!modalTank ? 'opacity-50 cursor-not-allowed placeholder:text-[13px] placeholder:font-black placeholder:uppercase placeholder:text-red-500' : ''}`} 
                   value={modalTot} 
                   onChange={e => setModalTot(e.target.value)} 
                   disabled={!modalTank}
+                  placeholder={!modalTank ? "Selecione o nível do tanque!" : ""}
                 />
-                {!modalTank && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-xs text-red-400 bg-black/80 px-2 py-1 rounded font-bold">Selecione o nível do tanque</span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="lcd-display p-4 text-center">
@@ -753,16 +800,32 @@ export default function App() {
               </button>
               <button 
                 className="flex-1 py-3 rounded-xl bg-red-600 font-bold text-white"
-                onClick={() => {
+                onClick={async () => {
                   const id = logToDelete[0] ? String(logToDelete[0]) : String(logToDelete[1]);
+                  
+                  // Optimistic local delete
                   const deletedStr = localStorage.getItem('smartfuel_deleted_logs');
                   const deletedArr = deletedStr ? JSON.parse(deletedStr).map(String) : [];
                   if (!deletedArr.includes(id)) {
                     deletedArr.push(id);
                     localStorage.setItem('smartfuel_deleted_logs', JSON.stringify(deletedArr));
                   }
+                  
+                  // Update UI immediately
+                  setAllLogs(prev => prev.filter(l => String(l[0]) !== id && String(l[1]) !== id));
                   setLogToDelete(null);
-                  sync();
+                  
+                  // Send delete request to backend
+                  try {
+                    const payload = JSON.stringify({ action: 'delete', id: id });
+                    if (navigator.sendBeacon) {
+                      navigator.sendBeacon(URL, payload);
+                    } else {
+                      await fetch(URL, { method: 'POST', mode: 'no-cors', body: payload });
+                    }
+                  } catch (e) {
+                    console.error("Delete error:", e);
+                  }
                 }}
               >
                 Excluir
