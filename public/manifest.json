@@ -3,18 +3,18 @@
   "short_name": "SmartFuel",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/app-icon-16.png?v=600",
+      "src": "/app-icon.webp?v=99",
       "sizes": "1024x1024",
-      "type": "image/png"
+      "type": "image/webp"
     },
     {
-      "src": "/app-icon-16.png?v=600",
+      "src": "/app-icon.webp?v=99",
       "sizes": "1024x1024",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any maskable"
     }
   ]
