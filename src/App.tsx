@@ -50,7 +50,7 @@ const formatDate = (dateStr: any) => {
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
   const [activeTab, setActiveTab] = useState('home');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
