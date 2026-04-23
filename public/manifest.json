@@ -7,14 +7,14 @@
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/app-icon.webp?v=99",
+      "src": "/icone-novo.png?v=200",
       "sizes": "1024x1024",
-      "type": "image/webp"
+      "type": "image/png"
     },
     {
-      "src": "/app-icon.webp?v=99",
+      "src": "/icone-novo.png?v=200",
       "sizes": "1024x1024",
-      "type": "image/webp",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
