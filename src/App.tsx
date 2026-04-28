@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Trash2, RefreshCw } from 'lucide-react';
+import { Trash2, RefreshCw, QrCode } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbwZKTr0tBtpnlShSIrqdZKwd3QDFAvpTPUcduZjc6deodnr_wAMumdw5LeHKGjxt7ZI3w/exec";
 
@@ -79,6 +80,58 @@ export default function App() {
   const [modalSt, setModalSt] = useState('');
   const [modalTank, setModalTank] = useState('');
   const [modalTot, setModalTot] = useState('');
+  const [isScanningNF, setIsScanningNF] = useState(false);
+  const [nfUrl, setNfUrl] = useState('');
+
+  useEffect(() => {
+    let html5QrCode: Html5Qrcode;
+    if (isScanningNF) {
+      setTimeout(() => {
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          (decodedText) => {
+            console.log("NF QR Code scanned:", decodedText);
+            setNfUrl(decodedText);
+            try {
+              if (decodedText.includes('vNF=')) {
+                const total = decodedText.split('vNF=')[1].split('&')[0];
+                if (total) {
+                  setModalTot(total.replace(',', '.'));
+                }
+              } else if (decodedText.includes('p=')) {
+                 const parts = decodedText.split('p=')[1].split('|');
+                 if (parts.length > 5) {
+                   const value = parts[4]; // In some states like MG, value is at index 4
+                   if (value && !isNaN(parseFloat(value))) {
+                     setModalTot(value.replace(',', '.'));
+                   }
+                 }
+              }
+            } catch (err) { }
+            
+            html5QrCode.stop().then(() => {
+              setIsScanningNF(false);
+            });
+          },
+          () => {} // ignore scan errors (they happen every frame that no QR is found)
+        ).catch((err) => {
+          console.error("Error starting scanner", err);
+          setIsScanningNF(false);
+        });
+      }, 100);
+    }
+
+    return () => {
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().catch(console.error);
+      }
+    };
+  }, [isScanningNF]);
 
   // Settings inputs
   const [settingsOil, setSettingsOil] = useState('');
@@ -313,7 +366,8 @@ export default function App() {
       station: modalSt,
       tankLevel: modalTank,
       date: modalDate,
-      oil: parseBrNumber(settingsOil)
+      oil: parseBrNumber(settingsOil),
+      nfUrl: nfUrl
     };
     
     // Optimistic UI Update
@@ -333,7 +387,7 @@ export default function App() {
       kmL,
       modalTank,
       0,
-      "",
+      nfUrl,
       parseBrNumber(settingsOil)
     ];
     setAllLogs(prev => [...prev, newLog]);
@@ -533,6 +587,11 @@ export default function App() {
                           {isElectric ? ' Km/kWh' : ' Km/L'}
                         </span>
                       </p>
+                      {l[15] && (
+                        <a href={l[15]} target="_blank" rel="noopener noreferrer" className="mt-1.5 flex items-center gap-1 text-xs font-black uppercase text-cyan-400 opacity-80 hover:opacity-100 transition-opacity">
+                          NF <QrCode size={18} />
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-xs font-black opacity-60 uppercase main-title mt-2 border-t border-white/10 pt-2">
@@ -776,6 +835,29 @@ export default function App() {
               <label className="text-[var(--text)] font-black uppercase">Preço Unitário</label>
               <div className="text-3xl font-black text-[var(--text)]">R$ {modalPrice}</div>
             </div>
+            
+            <div className="pt-2">
+              {!isScanningNF ? (
+                <button 
+                  onClick={() => setIsScanningNF(true)}
+                  className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-[var(--neon)]/10 text-[var(--neon)] border border-[var(--neon)]/30 font-black uppercase tracking-wider"
+                >
+                  <QrCode className="w-6 h-6" />
+                  Scanner QR
+                </button>
+              ) : (
+                <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-white/10 p-2">
+                  <div id="reader" className="w-full h-auto min-h-[300px]"></div>
+                  <button 
+                    onClick={() => setIsScanningNF(false)}
+                    className="w-full mt-4 p-4 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl font-black uppercase tracking-wider"
+                  >
+                    Cancelar Leitura
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-4 pt-4 pb-4">
               <button onClick={() => setIsModalOpen(false)} className="flex-1 panel-sport p-4 rounded-2xl font-black uppercase text-xl main-title !bg-amber-500/20 !border-amber-500/30 text-amber-500">Sair</button>
               <button onClick={saveData} disabled={!modalTank} className={`flex-1 panel-sport p-4 rounded-2xl font-black uppercase text-xl main-title !bg-blue-500/20 !border-blue-500/30 text-blue-400 ${!modalTank ? 'opacity-50 cursor-not-allowed' : ''}`}>Salvar</button>

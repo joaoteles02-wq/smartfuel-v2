@@ -1,18 +1,18 @@
 {
-  "name": "SmartFuel",
-  "short_name": "SmartFuel",
+  "name": "SmartFuel V2",
+  "short_name": "SmartFuel V2",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/icone-novo.png?v=200",
+      "src": "https://raw.githubusercontent.com/joaoteles02/smartfuel-v2/main/public/icone-novo.png",
       "sizes": "1024x1024",
       "type": "image/png"
     },
     {
-      "src": "/icone-novo.png?v=200",
+      "src": "https://raw.githubusercontent.com/joaoteles02/smartfuel-v2/main/public/icone-novo.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
