@@ -859,7 +859,7 @@ export default function App() {
                       Erro na Câmera: {scanError}
                       <br/>
                       <span className="opacity-70 normal-case text-[10px] mt-1 block">
-                        Dica: Abra no navegador usando o botão superior direito ou verifique as permissões.
+                        Dica: Verifique as permissões de câmera do seu navegador e recarregue a página.
                       </span>
                     </div>
                   )}
