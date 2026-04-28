@@ -84,9 +84,11 @@ export default function App() {
   const [invoiceLink, setInvoiceLink] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
 
-  const handleScanResult = (decodedText: string) => {
+  const handleScanResult = async (decodedText: string) => {
     if (!decodedText) return;
     setInvoiceLink(decodedText);
+    
+    // Auto-extração local via URL (Rápido)
     try {
       if (decodedText.toLowerCase().includes('vnf=')) {
         const total = decodedText.toLowerCase().split('vnf=')[1].split('&')[0];
@@ -111,6 +113,23 @@ export default function App() {
          }
       }
     } catch (err) { }
+
+    // Processamento via Servidor (XML/HTML) - Mais robusto
+    if (decodedText.startsWith('http')) {
+      try {
+        const res = await fetch('/api/parse-nf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: decodedText })
+        });
+        const data = await res.json();
+        if (data.success && data.total) {
+          setModalTot(data.total);
+        }
+      } catch (err) {
+        console.error("Erro ao processar NF no servidor:", err);
+      }
+    }
   };
 
   // Settings inputs
@@ -350,7 +369,10 @@ export default function App() {
       nfUrl: invoiceLink,
       photo: invoiceLink,
       invoice_url: invoiceLink,
-      invoiceLink: invoiceLink
+      invoiceLink: invoiceLink,
+      invoice: invoiceLink,
+      nf_url: invoiceLink,
+      "NF Link": invoiceLink
     };
     
     // Optimistic UI Update
