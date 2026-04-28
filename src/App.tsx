@@ -90,63 +90,52 @@ export default function App() {
       setScanError(null);
       setTimeout(() => {
         try {
-          Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) {
-              let cameraId = devices[0].id;
-              // Try to find back camera
-              for (const d of devices) {
-                if (d.label?.toLowerCase().includes('back') || d.label?.toLowerCase().includes('environment') || d.label?.toLowerCase().includes('traseira')) {
-                  cameraId = d.id;
-                  break;
-                }
+          // Initialize scanner
+          html5QrCode = new Html5Qrcode("reader");
+          html5QrCode.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              // Removed qrbox so it scans the entire frame instead of a tiny box, 
+              // which is crucial for large NFe QR codes.
+              videoConstraints: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
               }
+            },
+            (decodedText) => {
+              console.log("NF QR Code scanned:", decodedText);
+              setNfUrl(decodedText);
+              try {
+                if (decodedText.includes('vNF=')) {
+                  const total = decodedText.split('vNF=')[1].split('&')[0];
+                  if (total) {
+                    setModalTot(total.replace(',', '.'));
+                  }
+                } else if (decodedText.includes('p=')) {
+                   const parts = decodedText.split('p=')[1].split('|');
+                   if (parts.length > 5) {
+                     const value = parts[4]; // In some states like MG, value is at index 4
+                     if (value && !isNaN(parseFloat(value))) {
+                       setModalTot(value.replace(',', '.'));
+                     }
+                   }
+                }
+              } catch (err) { }
               
-              html5QrCode = new Html5Qrcode("reader");
-              html5QrCode.start(
-                cameraId,
-                {
-                  fps: 10,
-                  qrbox: { width: 250, height: 250 }
-                },
-                (decodedText) => {
-                  console.log("NF QR Code scanned:", decodedText);
-                  setNfUrl(decodedText);
-                  try {
-                    if (decodedText.includes('vNF=')) {
-                      const total = decodedText.split('vNF=')[1].split('&')[0];
-                      if (total) {
-                        setModalTot(total.replace(',', '.'));
-                      }
-                    } else if (decodedText.includes('p=')) {
-                       const parts = decodedText.split('p=')[1].split('|');
-                       if (parts.length > 5) {
-                         const value = parts[4]; // In some states like MG, value is at index 4
-                         if (value && !isNaN(parseFloat(value))) {
-                           setModalTot(value.replace(',', '.'));
-                         }
-                       }
-                    }
-                  } catch (err) { }
-                  
-                  html5QrCode.stop().then(() => {
-                    setIsScanningNF(false);
-                  }).catch(console.error);
-                },
-                () => {} // ignore scan errors
-              ).catch((err) => {
-                console.error("Error starting scanner", err);
-                setScanError("Permissão negada ou câmera inacessível.");
-              });
-            } else {
-              setScanError("Nenhuma câmera encontrada no dispositivo.");
-            }
-          }).catch(err => {
-            console.error("Error getting cameras", err);
-            setScanError("Não foi possível acessar a lista de câmeras.");
+              html5QrCode.stop().then(() => {
+                setIsScanningNF(false);
+              }).catch(console.error);
+            },
+            () => {} // ignore scan errors without logging
+          ).catch((err) => {
+            console.error("Error starting scanner", err);
+            setScanError("Câmera não suportada ou permissão negada.");
           });
         } catch (err) {
           console.error("Error initializing Html5Qrcode:", err);
-          setScanError(String(err));
+          setScanError("Erro ao inicializar o leitor de QR Code.");
         }
       }, 300);
     }
@@ -881,7 +870,17 @@ export default function App() {
                       </span>
                     </div>
                   )}
-                  <div id="reader" className="w-full h-auto min-h-[300px] bg-black/50"></div>
+                  <div className="relative">
+                    <div id="reader" className="w-full h-auto min-h-[300px] bg-black/50 rounded-lg overflow-hidden flex items-center justify-center"></div>
+                    {!scanError && (
+                      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4 z-10">
+                        <div className="text-center bg-black/60 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10 mt-auto mb-4">
+                          <p className="text-xs font-black text-cyan-400 uppercase tracking-widest animate-pulse">Aponte para o QR Code</p>
+                          <p className="text-[10px] text-white/70 mt-1">A câmera é usada para ler o código em tempo real</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <button 
                     onClick={() => setIsScanningNF(false)}
                     className="w-full mt-4 p-4 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl font-black uppercase tracking-wider"
