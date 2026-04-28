@@ -347,7 +347,10 @@ export default function App() {
       tankLevel: modalTank,
       date: modalDate,
       oil: parseBrNumber(settingsOil),
-      nfUrl: nfUrl
+      nfUrl: nfUrl,
+      photo: nfUrl,
+      invoice_url: nfUrl,
+      invoiceLink: nfUrl
     };
     
     // Optimistic UI Update
@@ -854,14 +857,19 @@ export default function App() {
                       onScan={(result) => {
                         if (result && result.length > 0) {
                           const url = result[0].rawValue;
-                          handleScanResult(url);
-                          setIsScanningNF(false);
+                          console.log("QR Code detected:", url);
+                          if (url && url.length > 0) {
+                            handleScanResult(url);
+                            setIsScanningNF(false);
+                          }
                         }
                       }}
                       onError={(error) => {
                         console.error("Scanner Error:", error);
                         setScanError("Erro ao acessar a câmera.");
                       }}
+                      allowMultiple={false}
+                      scanDelay={200}
                       components={{ finder: true, torch: true }}
                       styles={{
                         container: { width: '100%', height: '100%' }
