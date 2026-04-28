@@ -367,12 +367,7 @@ export default function App() {
       date: modalDate,
       oil: parseBrNumber(settingsOil),
       nfUrl: invoiceLink,
-      photo: invoiceLink,
-      invoice_url: invoiceLink,
-      invoiceLink: invoiceLink,
-      invoice: invoiceLink,
-      nf_url: invoiceLink,
-      "NF Link": invoiceLink
+      photo: invoiceLink
     };
     
     // Optimistic UI Update
@@ -401,36 +396,27 @@ export default function App() {
     setBooting(true);
     
     try {
-      // Use URLSearchParams for Google Apps Script compatibility (Form Data)
-      const formData = new URLSearchParams();
-      Object.entries(p).forEach(([key, value]) => {
-        formData.append(key, String(value));
-      });
-      
-      const payload = formData.toString();
+      const payload = JSON.stringify(p);
       
       if (navigator.sendBeacon) {
         const success = navigator.sendBeacon(URL, payload);
-        console.log("Save request sent (sendBeacon):", success);
         if (!success) {
           await fetch(URL, { 
             method: 'POST', 
             mode: 'no-cors',
-            body: payload,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            body: payload 
           });
         }
       } else {
         await fetch(URL, { 
           method: 'POST', 
           mode: 'no-cors',
-          body: payload,
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          body: payload 
         });
       }
-      console.log("Data sent to Google Script:", p);
+      console.log("Dados enviados com sucesso:", p);
     } catch (e) {
-      console.error("Save error:", e);
+      console.error("Erro ao salvar:", e);
     }
 
     setTimeout(() => {
