@@ -82,48 +82,55 @@ export default function App() {
   const [modalTot, setModalTot] = useState('');
   const [isScanningNF, setIsScanningNF] = useState(false);
   const [nfUrl, setNfUrl] = useState('');
+  const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
     let html5QrCode: Html5Qrcode;
     if (isScanningNF) {
+      setScanError(null);
       setTimeout(() => {
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }
-          },
-          (decodedText) => {
-            console.log("NF QR Code scanned:", decodedText);
-            setNfUrl(decodedText);
-            try {
-              if (decodedText.includes('vNF=')) {
-                const total = decodedText.split('vNF=')[1].split('&')[0];
-                if (total) {
-                  setModalTot(total.replace(',', '.'));
-                }
-              } else if (decodedText.includes('p=')) {
-                 const parts = decodedText.split('p=')[1].split('|');
-                 if (parts.length > 5) {
-                   const value = parts[4]; // In some states like MG, value is at index 4
-                   if (value && !isNaN(parseFloat(value))) {
-                     setModalTot(value.replace(',', '.'));
+        try {
+          html5QrCode = new Html5Qrcode("reader");
+          html5QrCode.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 }
+            },
+            (decodedText) => {
+              console.log("NF QR Code scanned:", decodedText);
+              setNfUrl(decodedText);
+              try {
+                if (decodedText.includes('vNF=')) {
+                  const total = decodedText.split('vNF=')[1].split('&')[0];
+                  if (total) {
+                    setModalTot(total.replace(',', '.'));
+                  }
+                } else if (decodedText.includes('p=')) {
+                   const parts = decodedText.split('p=')[1].split('|');
+                   if (parts.length > 5) {
+                     const value = parts[4]; // In some states like MG, value is at index 4
+                     if (value && !isNaN(parseFloat(value))) {
+                       setModalTot(value.replace(',', '.'));
+                     }
                    }
-                 }
-              }
-            } catch (err) { }
-            
-            html5QrCode.stop().then(() => {
-              setIsScanningNF(false);
-            });
-          },
-          () => {} // ignore scan errors (they happen every frame that no QR is found)
-        ).catch((err) => {
-          console.error("Error starting scanner", err);
-          setIsScanningNF(false);
-        });
-      }, 100);
+                }
+              } catch (err) { }
+              
+              html5QrCode.stop().then(() => {
+                setIsScanningNF(false);
+              }).catch(console.error);
+            },
+            () => {} // ignore scan errors (they happen every frame that no QR is found)
+          ).catch((err) => {
+            console.error("Error starting scanner", err);
+            setScanError(String(err));
+          });
+        } catch (err) {
+          console.error("Error initializing Html5Qrcode:", err);
+          setScanError(String(err));
+        }
+      }, 300); // Increased timeout to ensure element is ready
     }
 
     return () => {
@@ -847,7 +854,16 @@ export default function App() {
                 </button>
               ) : (
                 <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-white/10 p-2">
-                  <div id="reader" className="w-full h-auto min-h-[300px]"></div>
+                  {scanError && (
+                    <div className="bg-red-500/20 text-red-400 p-3 mb-2 rounded-xl text-xs font-black uppercase text-center border border-red-500/30">
+                      Erro na Câmera: {scanError}
+                      <br/>
+                      <span className="opacity-70 normal-case text-[10px] mt-1 block">
+                        Dica: Abra no navegador usando o botão superior direito ou verifique as permissões.
+                      </span>
+                    </div>
+                  )}
+                  <div id="reader" className="w-full h-auto min-h-[300px] bg-black/50"></div>
                   <button 
                     onClick={() => setIsScanningNF(false)}
                     className="w-full mt-4 p-4 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl font-black uppercase tracking-wider"
