@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw, QrCode } from 'lucide-react';
 
@@ -85,65 +85,68 @@ export default function App() {
   const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
-    let html5QrCode: Html5Qrcode;
+    let scanner: Html5QrcodeScanner | null = null;
+    
     if (isScanningNF) {
       setScanError(null);
-      setTimeout(() => {
+      
+      const timer = setTimeout(() => {
         try {
-          html5QrCode = new Html5Qrcode("reader");
-          html5QrCode.start(
-            { facingMode: "environment" },
-            {
-              fps: 20, // Increased FPS for faster detection
+          scanner = new Html5QrcodeScanner(
+            "reader",
+            { 
+              fps: 10, 
               qrbox: (viewfinderWidth, viewfinderHeight) => {
                 const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                const qrboxSize = Math.floor(minEdge * 0.7);
-                return {
-                  width: qrboxSize,
-                  height: qrboxSize
-                };
-              }
+                const size = Math.floor(minEdge * 0.82);
+                return { width: size, height: size };
+              },
+              aspectRatio: 1.0,
+              rememberLastUsedCamera: true
             },
+            /* verbose= */ false
+          );
+
+          scanner.render(
             (decodedText) => {
-              console.log("NF QR Code scanned:", decodedText);
               handleScanResult(decodedText);
-              html5QrCode.stop().then(() => {
-                setIsScanningNF(false);
-              }).catch(console.error);
+              if (scanner) {
+                scanner.clear().catch(console.error);
+              }
+              setIsScanningNF(false);
             },
-            () => {} // ignore scan errors
-          ).catch((err) => {
-            console.error("Error starting scanner", err);
-            setScanError("Câmera não suportada ou permissão negada.");
-          });
+            () => {} 
+          );
         } catch (err) {
-          console.error("Error initializing Html5Qrcode:", err);
-          setScanError("Erro ao inicializar o leitor de QR Code.");
+          console.error("Scanner Error:", err);
+          setScanError("Erro ao carregar o scanner.");
         }
       }, 500);
-    }
 
-    return () => {
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().catch(console.error);
-      }
-    };
+      return () => {
+        clearTimeout(timer);
+        if (scanner) {
+          scanner.clear().catch(console.error);
+        }
+      };
+    }
   }, [isScanningNF]);
 
   const handleScanResult = (decodedText: string) => {
+    if (!decodedText) return;
     setNfUrl(decodedText);
     try {
-      if (decodedText.includes('vNF=')) {
-        const total = decodedText.split('vNF=')[1].split('&')[0];
+      if (decodedText.toLowerCase().includes('vnf=')) {
+        const total = decodedText.toLowerCase().split('vnf=')[1].split('&')[0];
         if (total) {
           setModalTot(total.replace(',', '.'));
         }
-      } else if (decodedText.includes('p=')) {
-         const parts = decodedText.split('p=')[1].split('|');
-         if (parts.length > 5) {
-           const value = parts[4]; 
-           if (value && !isNaN(parseFloat(value))) {
-             setModalTot(value.replace(',', '.'));
+      } else if (decodedText.includes('|')) {
+         const parts = decodedText.split('|');
+         for (const part of parts) {
+           if (part.includes('.') && !isNaN(parseFloat(part)) && part.length < 10) {
+             setModalTot(part);
+             break;
            }
          }
       }
@@ -898,36 +901,15 @@ export default function App() {
                       </span>
                     </div>
                   )}
-                  <div className="relative">
-                    <div id="reader" className="w-full h-auto min-h-[300px] bg-black/50 rounded-lg overflow-hidden flex items-center justify-center"></div>
-                    <div id="reader-hidden" className="hidden"></div>
-                    {!scanError && (
-                      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
-                        {/* Scanner square border */}
-                        <div className="w-48 h-48 border-2 border-cyan-400/50 rounded-2xl relative overflow-hidden">
-                           {/* Animated scanner line */}
-                           <div className="absolute top-0 left-0 w-full h-[2px] bg-cyan-400 shadow-[0_0_10px_#22d3ee] animate-[scan_2s_linear_infinite]"></div>
-                        </div>
-                        <div className="mt-6 bg-black/60 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10">
-                          <p className="text-xs font-black text-cyan-400 uppercase tracking-widest">Enquadre o código</p>
-                        </div>
-                      </div>
-                    )}
+                  <div className="scanner-container">
+                    <div id="reader" className="w-full h-auto min-h-[300px]"></div>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <label className="flex items-center justify-center gap-2 p-3 text-xs font-black uppercase text-cyan-400 border border-cyan-400/30 bg-cyan-400/10 rounded-xl cursor-pointer hover:bg-cyan-400/20 active:scale-95 transition-all">
-                      <input type="file" accept="image/*" className="hidden" onChange={handleFileScan} />
-                      <RefreshCw size={14} className="animate-spin-slow" />
-                      Galeria
-                    </label>
-                    <button 
-                      onClick={() => setIsScanningNF(false)}
-                      className="p-3 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => setIsScanningNF(false)}
+                    className="w-full mt-4 p-4 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl font-black uppercase tracking-wider active:scale-95 transition-all"
+                  >
+                    Parar Scanner
+                  </button>
                 </div>
               )}
             </div>
