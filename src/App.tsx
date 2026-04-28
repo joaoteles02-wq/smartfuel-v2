@@ -90,47 +90,65 @@ export default function App() {
       setScanError(null);
       setTimeout(() => {
         try {
-          html5QrCode = new Html5Qrcode("reader");
-          html5QrCode.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 }
-            },
-            (decodedText) => {
-              console.log("NF QR Code scanned:", decodedText);
-              setNfUrl(decodedText);
-              try {
-                if (decodedText.includes('vNF=')) {
-                  const total = decodedText.split('vNF=')[1].split('&')[0];
-                  if (total) {
-                    setModalTot(total.replace(',', '.'));
-                  }
-                } else if (decodedText.includes('p=')) {
-                   const parts = decodedText.split('p=')[1].split('|');
-                   if (parts.length > 5) {
-                     const value = parts[4]; // In some states like MG, value is at index 4
-                     if (value && !isNaN(parseFloat(value))) {
-                       setModalTot(value.replace(',', '.'));
-                     }
-                   }
+          Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+              let cameraId = devices[0].id;
+              // Try to find back camera
+              for (const d of devices) {
+                if (d.label?.toLowerCase().includes('back') || d.label?.toLowerCase().includes('environment') || d.label?.toLowerCase().includes('traseira')) {
+                  cameraId = d.id;
+                  break;
                 }
-              } catch (err) { }
+              }
               
-              html5QrCode.stop().then(() => {
-                setIsScanningNF(false);
-              }).catch(console.error);
-            },
-            () => {} // ignore scan errors (they happen every frame that no QR is found)
-          ).catch((err) => {
-            console.error("Error starting scanner", err);
-            setScanError(String(err));
+              html5QrCode = new Html5Qrcode("reader");
+              html5QrCode.start(
+                cameraId,
+                {
+                  fps: 10,
+                  qrbox: { width: 250, height: 250 }
+                },
+                (decodedText) => {
+                  console.log("NF QR Code scanned:", decodedText);
+                  setNfUrl(decodedText);
+                  try {
+                    if (decodedText.includes('vNF=')) {
+                      const total = decodedText.split('vNF=')[1].split('&')[0];
+                      if (total) {
+                        setModalTot(total.replace(',', '.'));
+                      }
+                    } else if (decodedText.includes('p=')) {
+                       const parts = decodedText.split('p=')[1].split('|');
+                       if (parts.length > 5) {
+                         const value = parts[4]; // In some states like MG, value is at index 4
+                         if (value && !isNaN(parseFloat(value))) {
+                           setModalTot(value.replace(',', '.'));
+                         }
+                       }
+                    }
+                  } catch (err) { }
+                  
+                  html5QrCode.stop().then(() => {
+                    setIsScanningNF(false);
+                  }).catch(console.error);
+                },
+                () => {} // ignore scan errors
+              ).catch((err) => {
+                console.error("Error starting scanner", err);
+                setScanError("Permissão negada ou câmera inacessível.");
+              });
+            } else {
+              setScanError("Nenhuma câmera encontrada no dispositivo.");
+            }
+          }).catch(err => {
+            console.error("Error getting cameras", err);
+            setScanError("Não foi possível acessar a lista de câmeras.");
           });
         } catch (err) {
           console.error("Error initializing Html5Qrcode:", err);
           setScanError(String(err));
         }
-      }, 300); // Increased timeout to ensure element is ready
+      }, 300);
     }
 
     return () => {
