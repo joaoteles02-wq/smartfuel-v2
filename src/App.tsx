@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Trash2, RefreshCw, QrCode } from 'lucide-react';
+import { Trash2, RefreshCw, QrCode, X } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbwZKTr0tBtpnlShSIrqdZKwd3QDFAvpTPUcduZjc6deodnr_wAMumdw5LeHKGjxt7ZI3w/exec";
 
@@ -84,54 +84,6 @@ export default function App() {
   const [nfUrl, setNfUrl] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
-    
-    if (isScanningNF) {
-      setScanError(null);
-      
-      const timer = setTimeout(() => {
-        try {
-          scanner = new Html5QrcodeScanner(
-            "reader",
-            { 
-              fps: 10, 
-              qrbox: (viewfinderWidth, viewfinderHeight) => {
-                const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                const size = Math.floor(minEdge * 0.82);
-                return { width: size, height: size };
-              },
-              aspectRatio: 1.0,
-              rememberLastUsedCamera: true
-            },
-            /* verbose= */ false
-          );
-
-          scanner.render(
-            (decodedText) => {
-              handleScanResult(decodedText);
-              if (scanner) {
-                scanner.clear().catch(console.error);
-              }
-              setIsScanningNF(false);
-            },
-            () => {} 
-          );
-        } catch (err) {
-          console.error("Scanner Error:", err);
-          setScanError("Erro ao carregar o scanner.");
-        }
-      }, 500);
-
-      return () => {
-        clearTimeout(timer);
-        if (scanner) {
-          scanner.clear().catch(console.error);
-        }
-      };
-    }
-  }, [isScanningNF]);
-
   const handleScanResult = (decodedText: string) => {
     if (!decodedText) return;
     setNfUrl(decodedText);
@@ -149,24 +101,16 @@ export default function App() {
              break;
            }
          }
+      } else if (decodedText.includes('p=')) {
+         const parts = decodedText.split('p=')[1].split('|');
+         if (parts.length > 5) {
+           const value = parts[4]; 
+           if (value && !isNaN(parseFloat(value))) {
+             setModalTot(value.replace(',', '.'));
+           }
+         }
       }
     } catch (err) { }
-  };
-
-  const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
-    const file = e.target.files[0];
-    const scanner = new Html5Qrcode("reader-hidden");
-    try {
-      setScanError(null);
-      const decodedText = await scanner.scanFile(file, true);
-      handleScanResult(decodedText);
-      setIsScanningNF(false);
-    } catch (err) {
-      setScanError("Não foi possível ler o QR Code desta imagem.");
-    } finally {
-      scanner.clear();
-    }
   };
 
   // Settings inputs
@@ -891,25 +835,39 @@ export default function App() {
                   Scanner QR
                 </button>
               ) : (
-                <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-white/10 p-2">
+                <div className="bg-zinc-900 rounded-2xl overflow-hidden border border-white/10 p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-black uppercase text-cyan-400">Escanear Nota Fiscal</h3>
+                    <button onClick={() => setIsScanningNF(false)} className="text-red-400">
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
                   {scanError && (
                     <div className="bg-red-500/20 text-red-400 p-3 mb-2 rounded-xl text-xs font-black uppercase text-center border border-red-500/30">
-                      Erro na Câmera: {scanError}
-                      <br/>
-                      <span className="opacity-70 normal-case text-[10px] mt-1 block">
-                        Dica: Verifique as permissões de câmera do seu navegador e recarregue a página.
-                      </span>
+                      {scanError}
                     </div>
                   )}
-                  <div className="scanner-container">
-                    <div id="reader" className="w-full h-auto min-h-[300px]"></div>
+
+                  <div className="overflow-hidden rounded-2xl aspect-square relative bg-black">
+                    <Scanner 
+                      onScan={(result) => {
+                        if (result && result.length > 0) {
+                          const url = result[0].rawValue;
+                          handleScanResult(url);
+                          setIsScanningNF(false);
+                        }
+                      }}
+                      onError={(error) => {
+                        console.error("Scanner Error:", error);
+                        setScanError("Erro ao acessar a câmera.");
+                      }}
+                      components={{ finder: true, torch: true }}
+                      styles={{
+                        container: { width: '100%', height: '100%' }
+                      }}
+                    />
                   </div>
-                  <button 
-                    onClick={() => setIsScanningNF(false)}
-                    className="w-full mt-4 p-4 text-red-400 border border-red-500/30 bg-red-500/10 rounded-xl font-black uppercase tracking-wider active:scale-95 transition-all"
-                  >
-                    Parar Scanner
-                  </button>
                 </div>
               )}
             </div>
