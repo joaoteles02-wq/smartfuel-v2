@@ -401,30 +401,34 @@ export default function App() {
     setBooting(true);
     
     try {
-      const payload = JSON.stringify(p);
+      // Use URLSearchParams for Google Apps Script compatibility (Form Data)
+      const formData = new URLSearchParams();
+      Object.entries(p).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
       
-      // Use sendBeacon for more reliable delivery on mobile browsers
+      const payload = formData.toString();
+      
       if (navigator.sendBeacon) {
         const success = navigator.sendBeacon(URL, payload);
         console.log("Save request sent (sendBeacon):", success);
-        
-        // Fallback to fetch if sendBeacon fails (e.g. payload too large, though unlikely here)
         if (!success) {
           await fetch(URL, { 
             method: 'POST', 
             mode: 'no-cors',
-            body: payload 
+            body: payload,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
           });
-          console.log("Save request sent (fetch fallback)");
         }
       } else {
         await fetch(URL, { 
           method: 'POST', 
           mode: 'no-cors',
-          body: payload 
+          body: payload,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
-        console.log("Save request sent (fetch no-cors)");
       }
+      console.log("Data sent to Google Script:", p);
     } catch (e) {
       console.error("Save error:", e);
     }
