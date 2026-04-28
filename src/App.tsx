@@ -81,12 +81,12 @@ export default function App() {
   const [modalTank, setModalTank] = useState('');
   const [modalTot, setModalTot] = useState('');
   const [isScanningNF, setIsScanningNF] = useState(false);
-  const [nfUrl, setNfUrl] = useState('');
+  const [invoiceLink, setInvoiceLink] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
 
   const handleScanResult = (decodedText: string) => {
     if (!decodedText) return;
-    setNfUrl(decodedText);
+    setInvoiceLink(decodedText);
     try {
       if (decodedText.toLowerCase().includes('vnf=')) {
         const total = decodedText.toLowerCase().split('vnf=')[1].split('&')[0];
@@ -347,10 +347,10 @@ export default function App() {
       tankLevel: modalTank,
       date: modalDate,
       oil: parseBrNumber(settingsOil),
-      nfUrl: nfUrl,
-      photo: nfUrl,
-      invoice_url: nfUrl,
-      invoiceLink: nfUrl
+      nfUrl: invoiceLink,
+      photo: invoiceLink,
+      invoice_url: invoiceLink,
+      invoiceLink: invoiceLink
     };
     
     // Optimistic UI Update
@@ -370,7 +370,7 @@ export default function App() {
       kmL,
       modalTank,
       0,
-      nfUrl,
+      invoiceLink,
       parseBrNumber(settingsOil)
     ];
     setAllLogs(prev => [...prev, newLog]);
@@ -732,7 +732,7 @@ export default function App() {
               setModalTot('');
               setModalSt('');
               setModalTank('');
-              setNfUrl('');
+              setInvoiceLink('');
             }} 
             className="bg-cyan-500 w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg nav-btn-plus cursor-pointer"
           >
@@ -821,13 +821,13 @@ export default function App() {
             </div>
             
             <div className="pt-2">
-              {nfUrl ? (
+              {invoiceLink ? (
                 <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
                   <div className="text-green-400 flex items-center gap-2 font-black uppercase text-sm">
                     <QrCode className="w-5 h-5" />
                     NF-e Lida com Sucesso!
                   </div>
-                  <button onClick={() => setNfUrl('')} className="text-[10px] text-green-400/70 hover:text-green-400 underline uppercase">Ler novamente</button>
+                  <button onClick={() => setInvoiceLink('')} className="text-[10px] text-green-400/70 hover:text-green-400 underline uppercase">Ler novamente</button>
                 </div>
               ) : !isScanningNF ? (
                 <button 
@@ -857,7 +857,7 @@ export default function App() {
                       onScan={(result) => {
                         if (result && result.length > 0) {
                           const url = result[0].rawValue;
-                          console.log("QR Code detected:", url);
+                          console.log("QR Code detectado:", url);
                           if (url && url.length > 0) {
                             handleScanResult(url);
                             setIsScanningNF(false);
@@ -866,7 +866,7 @@ export default function App() {
                       }}
                       onError={(error) => {
                         console.error("Scanner Error:", error);
-                        setScanError("Erro ao acessar a câmera.");
+                        setScanError("Permita o acesso à câmera para continuar.");
                       }}
                       allowMultiple={false}
                       scanDelay={200}
