@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Scanner } from '@yudiel/react-qr-scanner';
+import { QRScanner } from './QRScanner';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw, QrCode, X } from 'lucide-react';
 
@@ -864,27 +864,18 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className="overflow-hidden rounded-2xl aspect-square relative bg-black">
-                    <Scanner 
-                      onScan={(result) => {
-                        if (result && result.length > 0) {
-                          const url = result[0].rawValue;
-                          console.log("QR Code detectado:", url);
-                          if (url && url.length > 0) {
-                            handleScanResult(url);
-                            setIsScanningNF(false);
-                          }
+                  <div className="overflow-hidden rounded-xl relative bg-black">
+                    <QRScanner 
+                      onScan={(decodedText) => {
+                        console.log("QR Code detectado:", decodedText);
+                        if (decodedText && decodedText.length > 0) {
+                          handleScanResult(decodedText);
+                          setIsScanningNF(false);
                         }
                       }}
-                      onError={(error) => {
-                        console.error("Scanner Error:", error);
-                        setScanError("Permita o acesso à câmera para continuar.");
-                      }}
-                      allowMultiple={false}
-                      scanDelay={200}
-                      components={{ finder: true, torch: true }}
-                      styles={{
-                        container: { width: '100%', height: '100%' }
+                      onError={(errorMessage) => {
+                        // ignore minor frame errors to avoid spamming the UI
+                        // html5-qrcode spams errors for every frame it can't find a code
                       }}
                     />
                   </div>
