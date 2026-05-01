@@ -153,7 +153,12 @@ export default function App() {
   const extractNfDataFromImage = async (base64Image: string, mimeType: string) => {
     setAnalyzingNF(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const apiKey = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        alert("Chave de API do Gemini não configurada (nem GEMINI_API_KEY nem GEMINI_API_KEY1).");
+        return;
+      }
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
         contents: [
@@ -652,6 +657,12 @@ export default function App() {
                 htmlFor="nf-photo-upload"
                 className="w-full relative overflow-hidden flex items-center justify-center gap-3 p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] text-white font-bold uppercase tracking-wide cursor-pointer hover:bg-white/20 hover:border-white/30 active:scale-[0.98] transition-all duration-300 group"
                 title="Tirar Foto da NF para preencher"
+                onClick={(e) => {
+                  if (currentOdo <= lastOdoVal) {
+                    e.preventDefault();
+                    alert("Por favor, preencha a Kilometragem Atual (Odômetro Atual Simular) no painel acima antes de fotografar a nota.");
+                  }
+                }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-full p-2 text-black z-10 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
