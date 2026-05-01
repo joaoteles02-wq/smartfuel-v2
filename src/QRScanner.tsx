@@ -25,8 +25,11 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
            { facingMode: "environment" },
            {
               fps: 10,
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0,
+              videoConstraints: {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                facingMode: "environment"
+              }
            },
            (decodedText) => {
               if (html5QrCode.isScanning) {

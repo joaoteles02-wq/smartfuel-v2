@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import { QRScanner } from './QRScanner';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Trash2, RefreshCw, QrCode, X } from 'lucide-react';
+import { Trash2, RefreshCw, QrCode, X, Camera, FileText } from 'lucide-react';
 
 const URL = "https://script.google.com/macros/s/AKfycbwZKTr0tBtpnlShSIrqdZKwd3QDFAvpTPUcduZjc6deodnr_wAMumdw5LeHKGjxt7ZI3w/exec";
 
@@ -81,6 +82,7 @@ export default function App() {
   const [modalTank, setModalTank] = useState('');
   const [modalTot, setModalTot] = useState('');
   const [isScanningNF, setIsScanningNF] = useState(false);
+  const [analyzingNF, setAnalyzingNF] = useState(false);
   const [invoiceLink, setInvoiceLink] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
 
@@ -129,6 +131,106 @@ export default function App() {
       } catch (err) {
         console.error("Erro ao processar NF no servidor:", err);
       }
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result?.toString().split(',')[1];
+      if (base64Data) {
+        await extractNfDataFromImage(base64Data, file.type);
+      }
+    };
+    reader.readAsDataURL(file);
+    // Reset the input so the same file can be chosen again if needed
+    e.target.value = '';
+  };
+
+  const extractNfDataFromImage = async (base64Image: string, mimeType: string) => {
+    setAnalyzingNF(true);
+    try {
+      const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        alert("Chave API do Gemini não configurada.");
+        return;
+      }
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: 'Se houver um QR Code na imagem, procure decodificar e ler a URL (link htpp/https) contida nele. Se não houver QR code, tente identificar alguma URL/Link impresso no rodapé da nota. Retorne tanto o link quanto a Chave de Acesso de 44 números se os encontrar. IMPORTANTE: Dê prioridade MÁXIMA a retornar um link de internet que comece com htttp:// ou https:// da fazenda ou sefaz.' },
+              { inlineData: { data: base64Image, mimeType } }
+            ]
+          }
+        ]
+      });
+
+      const rawLink = response.text || "";
+      console.log("IA retornou:", rawLink);
+
+      // Usar a mesma Regex sugerida pelo usuário
+      let chaveAcesso = null;
+      const apenasNumeros = rawLink.replace(/\D/g, '');
+      const match44 = apenasNumeros.match(/\d{44}/);
+      if (match44) {
+        chaveAcesso = match44[0];
+      }
+
+      let urlClicavel = null;
+      const urlMatch = rawLink.match(/https?:\/\/[^\s]+/);
+
+      if (urlMatch) {
+        urlClicavel = urlMatch[0];
+      } else if (rawLink.includes('fazenda.') || rawLink.includes('sefaz.')) {
+        const wwwMatch = rawLink.match(/(?:www\.)?[a-zA-Z0-9-]+\.(?:fazenda|sefaz)\.[a-zA-Z0-9.-]+\S*/i);
+        if (wwwMatch) {
+          urlClicavel = `https://${wwwMatch[0]}`;
+        }
+      }
+
+      console.log("A URL é:", urlClicavel);
+      console.log("A chave copiada é:", chaveAcesso);
+
+      if (chaveAcesso) {
+        try {
+          await navigator.clipboard.writeText(chaveAcesso);
+          alert("Chave de acesso copiada para a área de transferência!");
+        } catch (e) {
+          console.error("Não foi possível copiar a chave:", e);
+        }
+      }
+
+      if (urlClicavel) {
+        handleScanResult(urlClicavel);
+        setModalOdo(currentOdo.toString());
+        setModalLit('');
+        setModalSt('');
+        setModalTank('');
+        setInvoiceLink(urlClicavel);
+        setIsModalOpen(true);
+      } else if (chaveAcesso) {
+        handleScanResult(chaveAcesso);
+        setModalOdo(currentOdo.toString());
+        setModalLit('');
+        setModalSt('');
+        setModalTank('');
+        setInvoiceLink(chaveAcesso);
+        setIsModalOpen(true);
+      } else {
+        alert("Não foi possível encontrar URL ou Chave na foto.");
+      }
+    } catch (err: any) {
+      console.error("Erro ao processar imagem:", err);
+      alert("Erro ao analisar a imagem: " + (err.message || String(err)));
+    } finally {
+      setAnalyzingNF(false);
     }
   };
 
@@ -531,6 +633,32 @@ export default function App() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment" 
+              className="hidden" 
+              id="nf-photo-upload"
+              onChange={handlePhotoUpload}
+            />
+            {analyzingNF ? (
+              <div className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-black uppercase tracking-wider animate-pulse">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                Analisando Foto NF...
+              </div>
+            ) : (
+              <label 
+                htmlFor="nf-photo-upload"
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 font-black uppercase tracking-wider cursor-pointer hover:bg-cyan-500/30 transition-colors"
+                title="Tirar Foto da NF para preencher"
+              >
+                <Camera className="w-6 h-6" />
+                Fotografar NF
+              </label>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
