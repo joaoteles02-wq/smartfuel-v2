@@ -153,12 +153,7 @@ export default function App() {
   const extractNfDataFromImage = async (base64Image: string, mimeType: string) => {
     setAnalyzingNF(true);
     try {
-      const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
-      if (!apiKey) {
-        alert("Chave API do Gemini não configurada.");
-        return;
-      }
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
         contents: [
@@ -645,18 +640,24 @@ export default function App() {
               onChange={handlePhotoUpload}
             />
             {analyzingNF ? (
-              <div className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-black uppercase tracking-wider animate-pulse">
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                Analisando Foto NF...
+              <div className="w-full relative overflow-hidden flex items-center justify-center gap-3 p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] text-cyan-300 font-bold uppercase tracking-wide animate-pulse">
+                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10" />
+                 <div className="bg-cyan-500/20 rounded-full p-2 text-cyan-400 z-10">
+                   <RefreshCw className="w-5 h-5 animate-spin" />
+                 </div>
+                 <span className="z-10">Analisando Foto...</span>
               </div>
             ) : (
               <label 
                 htmlFor="nf-photo-upload"
-                className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 font-black uppercase tracking-wider cursor-pointer hover:bg-cyan-500/30 transition-colors"
+                className="w-full relative overflow-hidden flex items-center justify-center gap-3 p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] text-white font-bold uppercase tracking-wide cursor-pointer hover:bg-white/20 hover:border-white/30 active:scale-[0.98] transition-all duration-300 group"
                 title="Tirar Foto da NF para preencher"
               >
-                <Camera className="w-6 h-6" />
-                Fotografar NF
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)] rounded-full p-2 text-black z-10 transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <span className="z-10">Fotografar NF</span>
               </label>
             )}
           </div>
