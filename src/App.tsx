@@ -153,13 +153,17 @@ export default function App() {
   const extractNfDataFromImage = async (base64Image: string, mimeType: string) => {
     setAnalyzingNF(true);
     try {
-      let apiKey = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY1 || (import.meta as any).env?.VITE_GEMINI_API_KEY;
-      if (apiKey === 'undefined' || apiKey === 'null') apiKey = undefined;
-      
-      if (!apiKey || apiKey.trim() === '') {
-        alert("Chave de API do Gemini não configurada. Por favor, vá em Secrets e adicione a chave GEMINI_API_KEY1");
+      let apiKeyStr = '';
+      try {
+        apiKeyStr = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY || '';
+      } catch (e) {}
+
+      if (!apiKeyStr || apiKeyStr === 'undefined' || apiKeyStr === 'null' || apiKeyStr.trim() === '') {
+        alert("Erro: A chave GEMINI_API_KEY1 não foi encontrada ou está vazia na compilação. Recarregue a página ou o servidor se acabou de adicionar.");
         return;
       }
+      
+      const apiKey = apiKeyStr.trim();
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
