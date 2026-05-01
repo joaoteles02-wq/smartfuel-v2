@@ -153,9 +153,11 @@ export default function App() {
   const extractNfDataFromImage = async (base64Image: string, mimeType: string) => {
     setAnalyzingNF(true);
     try {
-      const apiKey = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        alert("Chave de API do Gemini não configurada (nem GEMINI_API_KEY nem GEMINI_API_KEY1).");
+      let apiKey = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY1 || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      if (apiKey === 'undefined' || apiKey === 'null') apiKey = undefined;
+      
+      if (!apiKey || apiKey.trim() === '') {
+        alert("Chave de API do Gemini não configurada. Por favor, vá em Secrets e adicione a chave GEMINI_API_KEY1");
         return;
       }
       const ai = new GoogleGenAI({ apiKey });
