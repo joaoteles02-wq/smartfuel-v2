@@ -155,15 +155,21 @@ export default function App() {
     try {
       let apiKeyStr = '';
       try {
-        apiKeyStr = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY || '';
+        // Tentative matching for all common env var structures
+        apiKeyStr = process.env.GEMINI_API_KEY1 || 
+                    process.env.GEMINI_API_KEY || 
+                    (import.meta as any).env?.VITE_GEMINI_API_KEY1 || 
+                    (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+                    '';
       } catch (e) {}
 
       if (!apiKeyStr || apiKeyStr === 'undefined' || apiKeyStr === 'null' || apiKeyStr.trim() === '') {
-        alert("Erro: A chave GEMINI_API_KEY1 não foi encontrada ou está vazia na compilação. Recarregue a página ou o servidor se acabou de adicionar.");
+        alert("Erro: A chave GEMINI_API_KEY1 não foi encontrada. Por favor, vá em Secrets e adicione a chave GEMINI_API_KEY1 (verifique se o servidor reiniciou após adicionar).");
         return;
       }
       
       const apiKey = apiKeyStr.trim();
+      console.log("Iniciando Gemini com chave final:", apiKey.substring(0, 8) + "...");
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
@@ -665,8 +671,13 @@ export default function App() {
                 title="Tirar Foto da NF para preencher"
                 onClick={(e) => {
                   if (currentOdo <= lastOdoVal) {
-                    e.preventDefault();
-                    alert("Por favor, preencha a Kilometragem Atual (Odômetro Atual Simular) no painel acima antes de fotografar a nota.");
+                    const message = currentOdo === 0 
+                      ? "O Odômetro Atual está em 0. Tem certeza que deseja tirar a foto agora?"
+                      : `O Odômetro Atual (${currentOdo}) não aumentou em relação ao último registro (${lastOdoVal}). Deseja fotografar assim mesmo?`;
+                    
+                    if (!window.confirm(message)) {
+                      e.preventDefault();
+                    }
                   }
                 }}
               >
