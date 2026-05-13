@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import xml2js from "xml2js";
 import fetch from "node-fetch";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +13,49 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
+
+  // API Route for Gemini NF-e parsing
+  app.post("/api/gemini-scan", async (req, res) => {
+    try {
+      const { base64Image, mimeType } = req.body;
+      if (!base64Image || !mimeType) {
+        return res.status(400).json({ error: "Image data and mime type are required." });
+      }
+
+      const apiKeyStr = process.env.GEMINI_API_KEY1 || process.env.GEMINI_API_KEY;
+      if (!apiKeyStr || apiKeyStr.trim() === '') {
+        return res.status(500).json({ error: "A chave GEMINI_API_KEY1 não foi configurada nos Secrets." });
+      }
+
+      const apiKey = apiKeyStr.trim();
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: 'Se houver um QR Code na imagem, procure decodificar e ler a URL (link htpp/https) contida nele. Se não houver QR code, tente identificar alguma URL/Link impresso no rodapé da nota. Retorne tanto o link quanto a Chave de Acesso de 44 números se os encontrar. IMPORTANTE: Dê prioridade MÁXIMA a retornar um link de internet que comece com htttp:// ou https:// da fazenda ou sefaz.'
+              },
+              {
+                inlineData: {
+                  data: base64Image,
+                  mimeType: mimeType
+                }
+              }
+            ]
+          }
+        ]
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Error with Gemini API:", error);
+      res.status(500).json({ error: "Erro ao processar imagem." });
+    }
+  });
 
   // API Route for parsing NF-e
   app.post("/api/parse-nf", async (req, res) => {

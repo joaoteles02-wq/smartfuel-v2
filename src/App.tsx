@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { QRScanner } from './QRScanner';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { Trash2, RefreshCw, QrCode, X, Camera, FileText } from 'lucide-react';
@@ -153,38 +152,25 @@ export default function App() {
   const extractNfDataFromImage = async (base64Image: string, mimeType: string) => {
     setAnalyzingNF(true);
     try {
-      let apiKeyStr = '';
-      try {
-        // Tentative matching for all common env var structures
-        apiKeyStr = process.env.GEMINI_API_KEY1 || 
-                    process.env.GEMINI_API_KEY || 
-                    (import.meta as any).env?.VITE_GEMINI_API_KEY1 || 
-                    (import.meta as any).env?.VITE_GEMINI_API_KEY || 
-                    '';
-      } catch (e) {}
-
-      if (!apiKeyStr || apiKeyStr === 'undefined' || apiKeyStr === 'null' || apiKeyStr.trim() === '') {
-        alert("Erro: A chave GEMINI_API_KEY1 não foi encontrada. Por favor, vá em Secrets e adicione a chave GEMINI_API_KEY1 (verifique se o servidor reiniciou após adicionar).");
-        return;
-      }
-      
-      const apiKey = apiKeyStr.trim();
-      console.log("Iniciando Gemini com chave final:", apiKey.substring(0, 8) + "...");
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: 'Se houver um QR Code na imagem, procure decodificar e ler a URL (link htpp/https) contida nele. Se não houver QR code, tente identificar alguma URL/Link impresso no rodapé da nota. Retorne tanto o link quanto a Chave de Acesso de 44 números se os encontrar. IMPORTANTE: Dê prioridade MÁXIMA a retornar um link de internet que comece com htttp:// ou https:// da fazenda ou sefaz.' },
-              { inlineData: { data: base64Image, mimeType } }
-            ]
-          }
-        ]
+      const res = await fetch('/api/gemini-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64Image, mimeType })
       });
 
-      const rawLink = response.text || "";
+      if (!res.ok) {
+        let errMsg = "Erro Desconhecido";
+        try {
+          const errData = await res.json();
+          errMsg = errData.error || errMsg;
+        } catch(e) {}
+        alert("Erro no Servidor: " + errMsg);
+        setAnalyzingNF(false);
+        return;
+      }
+
+      const data = await res.json();
+      const rawLink = data.text || "";
       console.log("IA retornou:", rawLink);
 
       // Usar a mesma Regex sugerida pelo usuário
